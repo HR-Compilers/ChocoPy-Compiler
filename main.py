@@ -2,9 +2,11 @@
 # T-603-THYD Compilers
 # Project: Test driver for lexer
 #
+from subprocess import HIGH_PRIORITY_CLASS
+from winreg import HKEY_LOCAL_MACHINE
 import lexer
 
-filename = 'main.py'
+filename = 'test.py'
 with open(filename) as f:
     lex = lexer.Lexer(f)
     token = lex.next()

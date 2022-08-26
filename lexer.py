@@ -181,11 +181,13 @@ class Lexer:
         Match the next token in input.
         :return: Token with information about the matched Tokentype.
         """
-
         # Remove spaces, tabs, comments, and "empty" lines, if any, before matching the next Tokentype.
         # skip character if space or tab
         if self.ch == ' ' or self.ch == '\t':
             self.__read_next_char()
+            while (self.ch == ' ' or self.ch == 't'):
+                self.__read_next_char()
+        
         # if we see a comment start, skip that line: read characters until we see a newline character
         if self.ch == '#':
             while self.ch != '\n':
@@ -193,6 +195,7 @@ class Lexer:
 
         # Record the start location of the lexeme we're matching.
         loc = Location(self.line, self.col)
+        
 
         # Ensure indentation is correct, emitting (returning) an INDENT/DEDENT token if called for.
         if self.beginning_of_logical_line:
@@ -200,9 +203,18 @@ class Lexer:
                 pass
             elif loc.col > self.legal_indent_levels[-1]:
                 self.legal_indent_levels.append(loc.col)
-                token = Token(Tokentype.INDENT, '\t', loc)
+                token = Token(Tokentype.Indent, "INDENT", loc)
+                return token
             else:
-                ...
+                self.legal_indent_levels.pop()
+                while loc.col < self.legal_indent_levels[-1]:
+                    self.legal_indent_levels.pop()
+                if loc.col != self.legal_indent_levels[-1]:
+                    raise SyntaxErrorException("Non matching indentation", loc)
+                else:
+                    token = Token(Tokentype.Dedent, "DEDENT", loc)
+                    return token
+            
 
         # Now, try to match a lexeme.
         if self.ch == '':
@@ -224,8 +236,12 @@ class Lexer:
             # Check for a string literal. Raise "Unterminated string"
             # syntax error exception if the string doesn't close on the line.
             self.__read_next_char()
-            ...
+            while self.ch != '"':
+                if self.ch == '\n':
+                    raise SyntaxErrorException("Unterminated string", loc)
+                self.__read_next_char()
             token = Token(Tokentype.StringLiteral, "?", loc)
+            self.__read_next_char()
 
         else:
             # Check for identifiers/reserved words.
@@ -233,8 +249,14 @@ class Lexer:
                 # Match an identifier.
                 chars = [self.ch]
                 self.__read_next_char()
-                ...
-                token = Token(Tokentype.Identifier, ''.join(chars), loc)
+                while ('a' <= self.ch <= 'z') or ('A' <= self.ch <= 'Z') or (self.ch == '_'):
+                    chars.append(self.ch)
+                    self.__read_next_char()
+                joined_str = ''.join(chars)
+                if joined_str in self.__reserved_words.keys():
+                    token = Token(self.__reserved_words.get(joined_str), joined_str, loc)
+                else:
+                    token = Token(Tokentype.Identifier, joined_str, loc)
             elif self.ch.isdigit():
                 # Match a number literal.
                 chars = [self.ch]
