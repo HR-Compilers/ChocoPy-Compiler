@@ -3,7 +3,6 @@
 # Project: Test driver for lexer
 #
 import lexer
-
 filename = 'test.py'
 with open(filename) as f:
     lex = lexer.Lexer(f)

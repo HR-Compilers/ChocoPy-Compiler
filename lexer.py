@@ -3,6 +3,7 @@
 # Project: Lexer Skeleton for ChocoPy 2022
 #
 from enum import Enum
+from re import S
 from typing import NamedTuple
 
 
@@ -223,8 +224,12 @@ class Lexer:
             token = Token(Tokentype.OpPlus, self.ch, loc)
             self.__read_next_char()
         elif self.ch == '-':
-            token = Token(Tokentype.OpMinus, self.ch, loc)
             self.__read_next_char()
+            if self.ch == '>':
+                token = Token(Tokentype.Arrow, self.ch, loc)
+                self.__read_next_char()
+            else:
+                token = Token(Tokentype.OpMinus, self.ch, loc)
         elif self.ch == '*':
             token = Token(Tokentype.OpMultiply, self.ch, loc)
             self.__read_next_char()
@@ -260,16 +265,41 @@ class Lexer:
                 self.__read_next_char()
             else:
                 token = Token(Tokentype.OpGt, self.ch, loc)
+        elif self.ch == '(':
+            self.__read_next_char()
+            token = Token(Tokentype.ParenthesisR, self.ch, loc)
+        elif self.ch == ')':
+            self.__read_next_char()
+            token = Token(Tokentype.ParenthesisL, self.ch, loc)
+        elif self.ch == '[':
+            self.__read_next_char()
+            token = Token(Tokentype.BracketR, self.ch, loc)
+        elif self.ch == ']':
+            self.__read_next_char()
+            token = Token(Tokentype.BracketL, self.ch, loc)
+        elif self.ch == '.':
+            self.__read_next_char()
+            token = Token(Tokentype.Period, self.ch, loc)
+        elif self.ch == ':':
+            self.__read_next_char()
+            token = Token(Tokentype.Colon, self.ch, loc)
+        elif self.ch == ',':
+            self.__read_next_char()
+            token = Token(Tokentype.Comma, self.ch, loc)
         elif self.ch == '\n':
             token = Token(Tokentype.Newline, self.ch, loc)
             self.__read_next_char()
         elif self.ch == '"':
             # Check for a string literal. Raise "Unterminated string"
             # syntax error exception if the string doesn't close on the line.
+            # TODO: Check for escaped characters
             self.__read_next_char()
             while self.ch != '"':
                 if self.ch == '\n':
                     raise SyntaxErrorException("Unterminated string", loc)
+                if self.ch == '\\':
+                    self.__read_next_char()
+                    pass
                 self.__read_next_char()
             token = Token(Tokentype.StringLiteral, "?", loc)
             self.__read_next_char()
@@ -279,7 +309,6 @@ class Lexer:
             if ('a' <= self.ch <= 'z') or ('A' <= self.ch <= 'Z') or (self.ch == '_'):
                 # Match an identifier.
                 chars = [self.ch]
-                # TODO: Check for escaped characters
                 self.__read_next_char()
                 while ('a' <= self.ch <= 'z') or ('A' <= self.ch <= 'Z') or (self.ch == '_'):
                     chars.append(self.ch)
@@ -306,3 +335,7 @@ class Lexer:
         self.beginning_of_logical_line = token.type == Tokentype.Newline
 
         return token
+
+# do we need to check escaped literals?
+# one dedentation or multiple?
+# what kind of tests?
