@@ -158,6 +158,7 @@ class Lexer:
             self.col = 1
         else:
             self.col += 1
+
         self.ch = self.f.read(1)
 
         if not self.ch:  # eof
@@ -175,7 +176,7 @@ class Lexer:
         self.legal_indent_levels = [1]
         self.beginning_of_logical_line = True
         self.eof = False
-        self.__read_next_char()  # Read in the first input character (self.ch).
+        self.__read_next_char()  # Read in the first input character (self.ch).        
 
     def next(self):
         """
@@ -184,12 +185,10 @@ class Lexer:
         """
         # Remove spaces, tabs, comments, and "empty" lines, if any, before matching the next Tokentype.
         # skip character if space or tab
-        if self.ch == ' ' or self.ch == '\t':
+        while (self.ch == ' ' or self.ch == '\t'):
             self.__read_next_char()
-            while (self.ch == ' ' or self.ch == '\t'):
-                self.__read_next_char()
-        
-        # if we see a comment start, skip that line: read characters until we see a newline character
+
+        # When we see a comment start, skip that line: read characters until we see a newline character
         if self.ch == '#':
             while self.ch != '\n':
                 self.__read_next_char()
@@ -197,19 +196,18 @@ class Lexer:
         # Record the start location of the lexeme we're matching.
         loc = Location(self.line, self.col)
         
-
         # Ensure indentation is correct, emitting (returning) an INDENT/DEDENT token if called for.
         if self.beginning_of_logical_line:
-            if loc.col == self.legal_indent_levels[-1]:
+            if loc.col == self.legal_indent_levels[-1]: 
                 pass
             elif loc.col > self.legal_indent_levels[-1]:
                 self.legal_indent_levels.append(loc.col)
                 token = Token(Tokentype.Indent, "INDENT", loc)
                 return token
             else:
-                self.legal_indent_levels.pop()
                 while loc.col < self.legal_indent_levels[-1]:
                     self.legal_indent_levels.pop()
+                    
                 if loc.col != self.legal_indent_levels[-1]:
                     raise SyntaxErrorException("Non matching indentation", loc)
                 else:

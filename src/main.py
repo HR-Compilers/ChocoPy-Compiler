@@ -3,7 +3,7 @@
 # Project: Test driver for lexer
 #
 import lexer
-filename = 'file.py'
+filename = "src/file.py"
 with open(filename) as f:
     lex = lexer.Lexer(f)
     token = lex.next()

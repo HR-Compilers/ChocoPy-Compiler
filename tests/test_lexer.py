@@ -4,6 +4,8 @@ from src.lexer import Lexer
 class TestLexer(unittest.TestCase):
     def test_example(self):
         self.assertEqual(1, 1)
+    
+    
 
 
 """""
