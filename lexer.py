@@ -245,12 +245,20 @@ class Lexer:
                 # TODO: check for escaped
                 ...
         elif self.ch == '=':
-            token = Token(Tokentype.OpAssign, self.ch, loc)
             self.__read_next_char()
-        elif self.ch == '==':
-            token = Token(Tokentype.OpEq, self.ch, loc)
-        elif self.ch == '!=':
-            token = Token(Tokentype.OpnotEq, self.ch, loc)
+            if self.ch == '=':
+                token = Token(Tokentype.OpEq, self.ch, loc)
+                self.__read_next_char()
+            else:
+                token = Token(Tokentype.OpAssign, self.ch, loc)
+        elif self.ch == '!':
+            self.__read_next_char()
+            if self.ch == '=':
+                token = Token(Tokentype.OpNotEq, self.ch, loc)
+                self.__read_next_char()
+            else:
+                token = Token(Tokentype.Unknown, self.ch, loc)
+                self.__read_next_char()
         elif self.ch == '<':
             self.__read_next_char()
             if self.ch == '=':
@@ -261,31 +269,31 @@ class Lexer:
         elif self.ch == '>':
             self.__read_next_char()
             if self.ch == '=':
-                token = Token(Tokentype.OpGtEq, self.ch, loc)
+                token = Token(Tokentype.OpGtEq, ">=", loc)
                 self.__read_next_char()
             else:
-                token = Token(Tokentype.OpGt, self.ch, loc)
-        elif self.ch == '(':
-            self.__read_next_char()
-            token = Token(Tokentype.ParenthesisR, self.ch, loc)
+                token = Token(Tokentype.OpGt, '>', loc)
         elif self.ch == ')':
+            token = Token(Tokentype.ParenthesisR, self.ch, loc)
             self.__read_next_char()
+        elif self.ch == '(':
             token = Token(Tokentype.ParenthesisL, self.ch, loc)
-        elif self.ch == '[':
             self.__read_next_char()
-            token = Token(Tokentype.BracketR, self.ch, loc)
         elif self.ch == ']':
+            token = Token(Tokentype.BracketR, self.ch, loc)
             self.__read_next_char()
+        elif self.ch == '[':
             token = Token(Tokentype.BracketL, self.ch, loc)
+            self.__read_next_char()
         elif self.ch == '.':
-            self.__read_next_char()
             token = Token(Tokentype.Period, self.ch, loc)
+            self.__read_next_char()
         elif self.ch == ':':
-            self.__read_next_char()
             token = Token(Tokentype.Colon, self.ch, loc)
-        elif self.ch == ',':
             self.__read_next_char()
+        elif self.ch == ',':
             token = Token(Tokentype.Comma, self.ch, loc)
+            self.__read_next_char()
         elif self.ch == '\n':
             token = Token(Tokentype.Newline, self.ch, loc)
             self.__read_next_char()
@@ -339,3 +347,5 @@ class Lexer:
 # do we need to check escaped literals?
 # one dedentation or multiple?
 # what kind of tests?
+# what about ! ?
+# lexemes for indent, dedent, tabs, string literals, why question mark for literal...?
