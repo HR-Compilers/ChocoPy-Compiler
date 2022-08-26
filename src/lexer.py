@@ -178,49 +178,236 @@ class Lexer:
         self.eof = False
         self.__read_next_char()  # Read in the first input character (self.ch).        
 
-    def next(self):
-        """
-        Match the next token in input.
-        :return: Token with information about the matched Tokentype.
-        """
+    def remove_spaces_tabs_emptylines(self):
         # Remove spaces, tabs, comments, and "empty" lines, if any, before matching the next Tokentype.
         # skip character if space or tab
         while (self.ch == ' ' or self.ch == '\t'):
             self.__read_next_char()
 
+    def ignore_comments(self):
         # When we see a comment start, skip that line: read characters until we see a newline character
         if self.ch == '#':
             while self.ch != '\n':
                 self.__read_next_char()
+
+    def check_indentation(self, loc):
+        if loc.col > self.legal_indent_levels[-1]:
+            self.legal_indent_levels.append(loc.col)
+            token = Token(Tokentype.Indent, "INDENT", loc)
+            return token
+        else:
+            while loc.col < self.legal_indent_levels[-1]:
+                self.legal_indent_levels.pop()
+
+            if loc.col != self.legal_indent_levels[-1]:
+                raise SyntaxErrorException("Non matching indentation", loc)
+            else:
+                token = Token(Tokentype.Dedent, "DEDENT", loc)
+                return token
+    
+    def match_lexeme(self, loc): # TODO: needs fix asap
+        if self.ch == '':
+            token = Token(Tokentype.EOI, '', loc)
+            return token
+        
+        elif self.ch == '+':
+            token = Token(Tokentype.OpPlus, self.ch, loc)
+            self.__read_next_char()
+            return token
+        
+        elif self.ch == '-':
+            self.__read_next_char()
+            if self.ch == '>':
+                token = Token(Tokentype.Arrow, self.ch, loc)
+                self.__read_next_char()
+                return token
+            else:
+                token = Token(Tokentype.OpMinus, self.ch, loc) # TODO: why there was no "read next char" in here? Did I made a 
+                self.__read_next_char()                        # mistake by adding it, or there was a reason? Was the same for almost
+                return token                                   # all the other symbols that needed a check with an if
+        
+        elif self.ch == '*':
+            token = Token(Tokentype.OpMultiply, self.ch, loc)
+            self.__read_next_char()
+            return token
+        
+        elif self.ch == '%':
+            token = Token(Tokentype.OpModulus, self.ch, loc)
+            self.__read_next_char()
+            return token
+        
+        elif self.ch == '/':
+            self.__read_next_char()
+            if self.ch == '/':
+                token = Token(Tokentype.OpIntDivide, "//", loc)
+                self.__read_next_char()
+                return token
+            else:
+                # TODO: check for single slash?
+                ...
+        
+        elif self.ch == '=':
+            self.__read_next_char()
+            if self.ch == '=':
+                token = Token(Tokentype.OpEq, "==", loc)
+                self.__read_next_char()
+                return token
+            else:
+                token = Token(Tokentype.OpAssign, "=", loc)
+                self.__read_next_char()
+                return token
+        
+        elif self.ch == '!':
+            self.__read_next_char()
+            if self.ch == '=':
+                token = Token(Tokentype.OpNotEq, "!=", loc)
+                self.__read_next_char()
+                return token
+            else:
+                token = Token(Tokentype.Unknown, self.ch, loc) # TODO: check if ! does anything
+                self.__read_next_char()
+                return token
+        
+        elif self.ch == '<':
+            self.__read_next_char()
+            if self.ch == '=':
+                token = Token(Tokentype.OpLtEq, '<=', loc)
+                self.__read_next_char()
+                return token
+            else:
+                token = Token(Tokentype.OpLt, '<', loc)
+                self.__read_next_char()
+                return token
+        
+        elif self.ch == '>':
+            self.__read_next_char()
+            if self.ch == '=':
+                token = Token(Tokentype.OpGtEq, ">=", loc)
+                self.__read_next_char()
+            else:
+                token = Token(Tokentype.OpGt, '>', loc) 
+                self.__read_next_char()
+                return token
+        
+        elif self.ch == ')':
+            token = Token(Tokentype.ParenthesisR, self.ch, loc)
+            self.__read_next_char()
+            return token
+        
+        elif self.ch == '(':
+            token = Token(Tokentype.ParenthesisL, self.ch, loc)
+            self.__read_next_char()
+            return token
+        
+        elif self.ch == ']':
+            token = Token(Tokentype.BracketR, self.ch, loc)
+            self.__read_next_char()
+            return token
+        
+        elif self.ch == '[':
+            token = Token(Tokentype.BracketL, self.ch, loc)
+            self.__read_next_char()
+            return token
+        
+        elif self.ch == '.':
+            token = Token(Tokentype.Period, self.ch, loc)
+            self.__read_next_char()
+            return token
+        
+        elif self.ch == ':':
+            token = Token(Tokentype.Colon, self.ch, loc)
+            self.__read_next_char()
+            return token
+        
+        elif self.ch == ',':
+            token = Token(Tokentype.Comma, self.ch, loc)
+            self.__read_next_char()
+            return token
+        
+        elif self.ch == '\n':
+            token = Token(Tokentype.Newline, self.ch, loc)
+            self.__read_next_char()
+            return token
+        
+        elif self.ch == '"': # TODO: Check for escaped characters
+            # Check for a string literal. Raise "Unterminated string"
+            # syntax error exception if the string doesn't close on the line.
+            self.__read_next_char()
+            while self.ch != '"':
+                if self.ch == '\n': 
+                    raise SyntaxErrorException("Unterminated string", loc)              
+                if self.ch == '\\': # TODO: check for possible errors. Too tired rn to think about that
+                    self.__read_next_char() # Are we sure that we want to ignore everything that comes after a \ ?
+                    pass
+                self.__read_next_char()
+            
+            token = Token(Tokentype.StringLiteral, "?", loc) # Why the question mark is the identifier?
+            self.__read_next_char()
+            return token
+
+        else:   # Check for identifiers/reserved words.
+            if ('a' <= self.ch <= 'z') or ('A' <= self.ch <= 'Z') or (self.ch == '_'):  # Match an identifier.
+                chars = [self.ch]
+                while ('a' <= self.ch <= 'z') or ('A' <= self.ch <= 'Z') or (self.ch == '_'):
+                    self.__read_next_char()
+                    chars.append(self.ch)
+
+                joined_str = ''.join(chars)
+                if joined_str in self.__reserved_words.keys():
+                    token = Token(self.__reserved_words.get(joined_str), joined_str, loc)
+                    self.__read_next_char()
+                    return token
+                else:
+                    token = Token(Tokentype.Identifier, joined_str, loc)
+                    self.__read_next_char()
+                    return token
+            
+            elif self.ch.isdigit(): # Match a number literal.
+                chars = [self.ch]
+                while self.ch.isdigit():
+                    self.__read_next_char()
+                    chars.append(self.ch)
+            
+                token = Token(Tokentype.IntegerLiteral, ''.join(chars), loc) # TODO: shouldn't we check for doubles too?
+                self.__read_next_char()
+                return token
+            
+            else:
+                # Return Unknown if no other known token is matched.
+                token = Token(Tokentype.Unknown, self.ch, loc)
+                self.__read_next_char()
+                return token
+        
+
+    def next(self):
+        """
+        Match the next token in input.
+        :return: Token with information about the matched Tokentype.
+        """
+        self.remove_spaces_tabs_emptylines()
+        self.ignore_comments()
 
         # Record the start location of the lexeme we're matching.
         loc = Location(self.line, self.col)
         
         # Ensure indentation is correct, emitting (returning) an INDENT/DEDENT token if called for.
         if self.beginning_of_logical_line:
-            if loc.col == self.legal_indent_levels[-1]: 
+            if loc.col == self.legal_indent_levels[-1]:         # TODO: SOLID principles violation detected, please fix this 
                 pass
-            elif loc.col > self.legal_indent_levels[-1]:
-                self.legal_indent_levels.append(loc.col)
-                token = Token(Tokentype.Indent, "INDENT", loc)
-                return token
             else:
-                while loc.col < self.legal_indent_levels[-1]:
-                    self.legal_indent_levels.pop()
-                    
-                if loc.col != self.legal_indent_levels[-1]:
-                    raise SyntaxErrorException("Non matching indentation", loc)
-                else:
-                    token = Token(Tokentype.Dedent, "DEDENT", loc)
-                    return token
+                return self.check_indentation(loc)
             
+            
+        # token = self.match_lexeme(loc)
 
         # Now, try to match a lexeme.
         if self.ch == '':
             token = Token(Tokentype.EOI, '', loc)
+        
         elif self.ch == '+':
             token = Token(Tokentype.OpPlus, self.ch, loc)
             self.__read_next_char()
+        
         elif self.ch == '-':
             self.__read_next_char()
             if self.ch == '>':
@@ -228,12 +415,15 @@ class Lexer:
                 self.__read_next_char()
             else:
                 token = Token(Tokentype.OpMinus, self.ch, loc)
+        
         elif self.ch == '*':
             token = Token(Tokentype.OpMultiply, self.ch, loc)
             self.__read_next_char()
+        
         elif self.ch == '%':
             token = Token(Tokentype.OpModulus, self.ch, loc)
             self.__read_next_char()
+        
         elif self.ch == '/':
             self.__read_next_char()
             if self.ch == '/':
@@ -241,8 +431,8 @@ class Lexer:
                 self.__read_next_char()
             else:
                 # TODO: check for single slash?
-                
                 ...
+        
         elif self.ch == '=':
             self.__read_next_char()
             if self.ch == '=':
@@ -250,14 +440,16 @@ class Lexer:
                 self.__read_next_char()
             else:
                 token = Token(Tokentype.OpAssign, "=", loc)
+        
         elif self.ch == '!':
             self.__read_next_char()
             if self.ch == '=':
                 token = Token(Tokentype.OpNotEq, "!=", loc)
                 self.__read_next_char()
             else:
-                token = Token(Tokentype.Unknown, self.ch, loc)
+                token = Token(Tokentype.Unknown, self.ch, loc) # TODO: check if ! does anything
                 self.__read_next_char()
+        
         elif self.ch == '<':
             self.__read_next_char()
             if self.ch == '=':
@@ -265,6 +457,7 @@ class Lexer:
                 self.__read_next_char()
             else:
                 token = Token(Tokentype.OpLt, '<', loc)
+        
         elif self.ch == '>':
             self.__read_next_char()
             if self.ch == '=':
@@ -272,68 +465,75 @@ class Lexer:
                 self.__read_next_char()
             else:
                 token = Token(Tokentype.OpGt, '>', loc)
+        
         elif self.ch == ')':
             token = Token(Tokentype.ParenthesisR, self.ch, loc)
             self.__read_next_char()
+        
         elif self.ch == '(':
             token = Token(Tokentype.ParenthesisL, self.ch, loc)
             self.__read_next_char()
+        
         elif self.ch == ']':
             token = Token(Tokentype.BracketR, self.ch, loc)
             self.__read_next_char()
+        
         elif self.ch == '[':
             token = Token(Tokentype.BracketL, self.ch, loc)
             self.__read_next_char()
+        
         elif self.ch == '.':
             token = Token(Tokentype.Period, self.ch, loc)
             self.__read_next_char()
+        
         elif self.ch == ':':
             token = Token(Tokentype.Colon, self.ch, loc)
             self.__read_next_char()
+        
         elif self.ch == ',':
             token = Token(Tokentype.Comma, self.ch, loc)
             self.__read_next_char()
+        
         elif self.ch == '\n':
             token = Token(Tokentype.Newline, self.ch, loc)
             self.__read_next_char()
-        elif self.ch == '"':
+        
+        elif self.ch == '"': # TODO: Check for escaped characters
             # Check for a string literal. Raise "Unterminated string"
             # syntax error exception if the string doesn't close on the line.
-            # TODO: Check for escaped characters
             self.__read_next_char()
             while self.ch != '"':
-                if self.ch == '\n':
-                    raise SyntaxErrorException("Unterminated string", loc)
-                if self.ch == '\\':
-                    self.__read_next_char()
+                if self.ch == '\n': 
+                    raise SyntaxErrorException("Unterminated string", loc)              
+                if self.ch == '\\': # TODO: check for possible errors. Too tired rn to think about that
+                    self.__read_next_char() # Are we sure that we want to ignore everything that comes after a \ ?
                     pass
                 self.__read_next_char()
-            token = Token(Tokentype.StringLiteral, "?", loc)
+            
+            token = Token(Tokentype.StringLiteral, "?", loc) # Why the question mark is the identifier?
             self.__read_next_char()
 
-        else:
-            # Check for identifiers/reserved words.
-            if ('a' <= self.ch <= 'z') or ('A' <= self.ch <= 'Z') or (self.ch == '_'):
-                # Match an identifier.
+        else:   # Check for identifiers/reserved words.
+            if ('a' <= self.ch <= 'z') or ('A' <= self.ch <= 'Z') or (self.ch == '_'):  # Match an identifier.
                 chars = [self.ch]
-                self.__read_next_char()
                 while ('a' <= self.ch <= 'z') or ('A' <= self.ch <= 'Z') or (self.ch == '_'):
-                    chars.append(self.ch)
                     self.__read_next_char()
+                    chars.append(self.ch)
+
                 joined_str = ''.join(chars)
                 if joined_str in self.__reserved_words.keys():
                     token = Token(self.__reserved_words.get(joined_str), joined_str, loc)
                 else:
                     token = Token(Tokentype.Identifier, joined_str, loc)
-            elif self.ch.isdigit():
-                # Match a number literal.
-                chars = [self.ch]
-                self.__read_next_char()
-                while self.ch.isdigit():
-                    chars.append(self.ch)
-                    self.__read_next_char()
             
-                token = Token(Tokentype.IntegerLiteral, ''.join(chars), loc)
+            elif self.ch.isdigit(): # Match a number literal.
+                chars = [self.ch]
+                while self.ch.isdigit():
+                    self.__read_next_char()
+                    chars.append(self.ch)
+            
+                token = Token(Tokentype.IntegerLiteral, ''.join(chars), loc) # TODO: shouldn't we check for doubles too?
+            
             else:
                 # Return Unknown if no other known token is matched.
                 token = Token(Tokentype.Unknown, self.ch, loc)
