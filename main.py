@@ -2,8 +2,6 @@
 # T-603-THYD Compilers
 # Project: Test driver for lexer
 #
-from subprocess import HIGH_PRIORITY_CLASS
-from winreg import HKEY_LOCAL_MACHINE
 import lexer
 
 filename = 'test.py'

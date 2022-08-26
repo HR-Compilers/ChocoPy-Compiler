@@ -185,7 +185,7 @@ class Lexer:
         # skip character if space or tab
         if self.ch == ' ' or self.ch == '\t':
             self.__read_next_char()
-            while (self.ch == ' ' or self.ch == 't'):
+            while (self.ch == ' ' or self.ch == '\t'):
                 self.__read_next_char()
         
         # if we see a comment start, skip that line: read characters until we see a newline character
@@ -222,6 +222,30 @@ class Lexer:
         elif self.ch == '+':
             token = Token(Tokentype.OpPlus, self.ch, loc)
             self.__read_next_char()
+        elif self.ch == '-':
+            token = Token(Tokentype.OpMinus, self.ch, loc)
+            self.__read_next_char()
+        elif self.ch == '*':
+            token = Token(Tokentype.OpMultiply, self.ch, loc)
+            self.__read_next_char()
+        elif self.ch == '%':
+            token = Token(Tokentype.OpModulus, self.ch, loc)
+            self.__read_next_char()
+        elif self.ch == '\\':
+            self.__read_next_char()
+            if self.ch == '\\':
+                token = Token(Tokentype.OpIntDivide, self.ch, loc)
+                self.__read_next_char()
+            else:
+                # TODO: check for escaped
+                ...
+        elif self.ch == '=':
+            token = Token(Tokentype.OpAssign, self.ch, loc)
+            self.__read_next_char()
+        elif self.ch == '==':
+            token = Token(Tokentype.OpEq, self.ch, loc)
+        elif self.ch == '!=':
+            token = Token(Tokentype.OpnotEq, self.ch, loc)
         elif self.ch == '<':
             self.__read_next_char()
             if self.ch == '=':
@@ -229,6 +253,13 @@ class Lexer:
                 self.__read_next_char()
             else:
                 token = Token(Tokentype.OpLt, '<', loc)
+        elif self.ch == '>':
+            self.__read_next_char()
+            if self.ch == '=':
+                token = Token(Tokentype.OpGtEq, self.ch, loc)
+                self.__read_next_char()
+            else:
+                token = Token(Tokentype.OpGt, self.ch, loc)
         elif self.ch == '\n':
             token = Token(Tokentype.Newline, self.ch, loc)
             self.__read_next_char()
@@ -248,6 +279,7 @@ class Lexer:
             if ('a' <= self.ch <= 'z') or ('A' <= self.ch <= 'Z') or (self.ch == '_'):
                 # Match an identifier.
                 chars = [self.ch]
+                # TODO: Check for escaped characters
                 self.__read_next_char()
                 while ('a' <= self.ch <= 'z') or ('A' <= self.ch <= 'Z') or (self.ch == '_'):
                     chars.append(self.ch)
@@ -261,7 +293,10 @@ class Lexer:
                 # Match a number literal.
                 chars = [self.ch]
                 self.__read_next_char()
-                ...
+                while self.ch.isdigit():
+                    chars.append(self.ch)
+                    self.__read_next_char()
+            
                 token = Token(Tokentype.IntegerLiteral, ''.join(chars), loc)
             else:
                 # Return Unknown if no other known token is matched.
