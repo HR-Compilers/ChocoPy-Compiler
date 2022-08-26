@@ -345,9 +345,11 @@ class Lexer:
 
         return token
 
-# do we need to check escaped literals?
-# one dedentation or multiple?
-# what kind of tests?
-# what about ! ?
-# what about single slash / ?
-# lexemes for indent, dedent, tabs, string literals, why question mark for literal...?
+
+
+# Questions for the teacher:
+# Do we need to check escaped literals?
+# One dedentation or multiple?
+# What kind of tests?
+# What about single slash / ?
+# Lexemes for indent, dedent, tabs, string literals, why question mark for literal...?
