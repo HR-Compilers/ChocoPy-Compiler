@@ -236,25 +236,26 @@ class Lexer:
         elif self.ch == '%':
             token = Token(Tokentype.OpModulus, self.ch, loc)
             self.__read_next_char()
-        elif self.ch == '\\':
+        elif self.ch == '/':
             self.__read_next_char()
-            if self.ch == '\\':
-                token = Token(Tokentype.OpIntDivide, self.ch, loc)
+            if self.ch == '/':
+                token = Token(Tokentype.OpIntDivide, "//", loc)
                 self.__read_next_char()
             else:
-                # TODO: check for escaped
+                # TODO: check for single slash?
+                
                 ...
         elif self.ch == '=':
             self.__read_next_char()
             if self.ch == '=':
-                token = Token(Tokentype.OpEq, self.ch, loc)
+                token = Token(Tokentype.OpEq, "==", loc)
                 self.__read_next_char()
             else:
-                token = Token(Tokentype.OpAssign, self.ch, loc)
+                token = Token(Tokentype.OpAssign, "=", loc)
         elif self.ch == '!':
             self.__read_next_char()
             if self.ch == '=':
-                token = Token(Tokentype.OpNotEq, self.ch, loc)
+                token = Token(Tokentype.OpNotEq, "!=", loc)
                 self.__read_next_char()
             else:
                 token = Token(Tokentype.Unknown, self.ch, loc)
@@ -348,4 +349,5 @@ class Lexer:
 # one dedentation or multiple?
 # what kind of tests?
 # what about ! ?
+# what about single slash / ?
 # lexemes for indent, dedent, tabs, string literals, why question mark for literal...?
