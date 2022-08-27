@@ -1,4 +1,2 @@
-a
-    a
-        a
-a
+print("hello")
+    1

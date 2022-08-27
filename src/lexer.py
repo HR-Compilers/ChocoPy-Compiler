@@ -348,9 +348,10 @@ class Lexer:
         else:   # Check for identifiers/reserved words.
             if ('a' <= self.ch <= 'z') or ('A' <= self.ch <= 'Z') or (self.ch == '_'):  # Match an identifier.
                 chars = [self.ch]
+                self.__read_next_char()
                 while ('a' <= self.ch <= 'z') or ('A' <= self.ch <= 'Z') or (self.ch == '_'):
-                    self.__read_next_char()
                     chars.append(self.ch)
+                    self.__read_next_char()
 
                 joined_str = ''.join(chars)
                 if joined_str in self.__reserved_words.keys():
