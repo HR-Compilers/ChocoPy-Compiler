@@ -3,7 +3,6 @@
 # Project: Lexer Skeleton for ChocoPy 2022
 #
 from enum import Enum
-from re import S
 from typing import NamedTuple
 
 
@@ -345,10 +344,12 @@ class Lexer:
 
         return token
 
-# TODO: integer literal cannot start with 0, throw exception with lexer
+# TODO: integer literal cannot start with 0, ill-formed integer literal
+# TODO: integer overflow exception: ill-formed integer literal
 
 # one dedentation or multiple?: multiple, one in every run
-# what kind of tests?
+# throw dedentation until error
+# what kind of tests? file with all tokens and indentation
 # what about ! ? -> Unknown token
 # lexemes for indent, dedent, tabs, string literals, why question mark for literal...?
-
+# replace tabs by spaces-> read manual
