@@ -203,16 +203,14 @@ class Lexer:
                 pass
             elif loc.col > self.legal_indent_levels[-1]:
                 self.legal_indent_levels.append(loc.col)
-                token = Token(Tokentype.Indent, "INDENT", loc)
+                token = Token(Tokentype.Indent, "<INDENT>", loc)
                 return token
             else:
                 self.legal_indent_levels.pop()
-                while loc.col < self.legal_indent_levels[-1]:
-                    self.legal_indent_levels.pop()
-                if loc.col != self.legal_indent_levels[-1]:
+                if loc.col > self.legal_indent_levels[-1]:
                     raise SyntaxErrorException("Non matching indentation", loc)
                 else:
-                    token = Token(Tokentype.Dedent, "DEDENT", loc)
+                    token = Token(Tokentype.Dedent, "<DEDENT>", loc)
                     return token
             
 
@@ -328,7 +326,6 @@ class Lexer:
                 # Match a number literal.
                 
                 # if first character is a zero, there can be no more digits after
-                print(type(self.ch))
                 if self.ch == '0':
                     self.__read_next_char()
                     if self.ch.isdigit():
