@@ -242,8 +242,6 @@ class Lexer:
                 self.__read_next_char()
             else:
                 token = Token(Tokentype.Unknown, "/", loc)
-                
-                ...
         elif self.ch == '=':
             self.__read_next_char()
             if self.ch == '=':
@@ -328,13 +326,31 @@ class Lexer:
                     token = Token(Tokentype.Identifier, joined_str, loc)
             elif self.ch.isdigit():
                 # Match a number literal.
+                
+                # if first character is a zero, there can be no more digits after
+                print(type(self.ch))
+                if self.ch == '0':
+                    self.__read_next_char()
+                    if self.ch.isdigit():
+                        raise SyntaxErrorException("Ill-formed integer literal", loc)
+                    else:
+                        token = Token(Tokentype.IntegerLiteral, "0", loc)
+                    
                 chars = [self.ch]
                 self.__read_next_char()
+                # read until no more digits
                 while self.ch.isdigit():
                     chars.append(self.ch)
                     self.__read_next_char()
-            
-                token = Token(Tokentype.IntegerLiteral, ''.join(chars), loc)
+                
+                # create an integer literal out of the character list
+                chars_to_int = int("".join([str(c) for c in chars]))
+                
+                # if integer literal larger than max, throw error
+                if chars_to_int > 2147483647:
+                    raise SyntaxErrorException("Ill-formed integer literal", loc)
+                else:
+                    token = Token(Tokentype.IntegerLiteral, ''.join(chars), loc)
             else:
                 # Return Unknown if no other known token is matched.
                 token = Token(Tokentype.Unknown, self.ch, loc)
@@ -344,12 +360,8 @@ class Lexer:
 
         return token
 
-# TODO: integer literal cannot start with 0, ill-formed integer literal
-# TODO: integer overflow exception: ill-formed integer literal
-
 # one dedentation or multiple?: multiple, one in every run
 # throw dedentation until error
 # what kind of tests? file with all tokens and indentation
-# what about ! ? -> Unknown token
 # lexemes for indent, dedent, tabs, string literals, why question mark for literal...?
 # replace tabs by spaces-> read manual
