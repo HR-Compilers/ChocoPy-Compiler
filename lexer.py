@@ -291,7 +291,7 @@ class Lexer:
             token = Token(Tokentype.Comma, self.ch, loc)
             self.__read_next_char()
         elif self.ch == '\n':
-            token = Token(Tokentype.Newline, self.ch, loc)
+            token = Token(Tokentype.Newline, "<NEWLINE>", loc)
             self.__read_next_char()
         elif self.ch == '"':
             # Check for a string literal. Raise "Unterminated string"
@@ -303,9 +303,11 @@ class Lexer:
                     raise SyntaxErrorException("Unterminated string", loc)
                 if self.ch == '\\':
                     self.__read_next_char()
+                    if self.ch != 'n' and self.ch != '\\' and self.ch != 't' and self.ch != '\"':
+                        raise SyntaxErrorException("Ill-formed string", loc)
                     pass
                 self.__read_next_char()
-            token = Token(Tokentype.StringLiteral, "?", loc)
+            token = Token(Tokentype.StringLiteral, "STRING LITERAL", loc)
             self.__read_next_char()
 
         else:
@@ -360,3 +362,5 @@ class Lexer:
 
 # replace tabs by spaces-> read manual
 # Why are we printing a line when we reach EOI?
+
+# TODO: Read through reference pdf
