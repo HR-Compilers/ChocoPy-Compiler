@@ -160,9 +160,9 @@ class Lexer:
         self.ch = self.f.read(1)
 
         if not self.ch:  # eof
-            self.ch = '\n'
-            self.line += 1
-            self.col = 1
+            # self.ch = '\n'
+            # self.line += 1
+            # self.col = 1
             self.eof = True
 
     def __init__(self, f):
@@ -357,8 +357,6 @@ class Lexer:
 
         return token
 
-# one dedentation or multiple?: multiple, one in every run
-# throw dedentation until error
-# what kind of tests? file with all tokens and indentation
-# lexemes for indent, dedent, tabs, string literals, why question mark for literal...?
+
 # replace tabs by spaces-> read manual
+# Why are we printing a line when we reach EOI?
