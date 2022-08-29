@@ -301,7 +301,7 @@ class Lexer:
         elif self.ch == '"':
             # Check for a string literal. Raise "Unterminated string"
             # syntax error exception if the string doesn't close on the line.
-            # TODO: Check for escaped characters
+            # TODO: Check for escaped characters and throw exception
             self.__read_next_char()
             while self.ch != '"':
                 if self.ch == '\n':
@@ -345,9 +345,10 @@ class Lexer:
 
         return token
 
-# do we need to check escaped literals?
-# one dedentation or multiple?
+# TODO: integer literal cannot start with 0, throw exception with lexer
+
+# one dedentation or multiple?: multiple, one in every run
 # what kind of tests?
-# what about ! ?
-# what about single slash / ?
+# what about ! ? -> Unknown token
 # lexemes for indent, dedent, tabs, string literals, why question mark for literal...?
+
