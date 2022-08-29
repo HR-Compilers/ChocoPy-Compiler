@@ -241,7 +241,7 @@ class Lexer:
                 token = Token(Tokentype.OpIntDivide, "//", loc)
                 self.__read_next_char()
             else:
-                # TODO: check for single slash?
+                token = Token(Tokentype.Unknown, "/", loc)
                 
                 ...
         elif self.ch == '=':
@@ -257,7 +257,7 @@ class Lexer:
                 token = Token(Tokentype.OpNotEq, "!=", loc)
                 self.__read_next_char()
             else:
-                token = Token(Tokentype.Unknown, self.ch, loc)
+                token = Token(Tokentype.Unknown, "!", loc)
                 self.__read_next_char()
         elif self.ch == '<':
             self.__read_next_char()
