@@ -368,14 +368,17 @@ class Lexer:
         return token
 
 
-# replace tabs by spaces-> read manual
+# ------------------ QUESTIONS -----------------
 # Why are we printing a line when we reach EOI?
+# Should we ignore blank lines?
+# Should we separate STRING and IDSTRING tokens? - like in the reference
 
 # TODO: Identifier can have integer, DONE
-# TODO: Blank lines should be ignored
 # TODO: At the end of the input program, a DEDENT token is generated for 
 #       each number remaining on the stack that is larger than zero.” , DONE
 # TODO: String literals should be limited ASCII, DONE
+
+# TODO: replace tabs by spaces-> read manual
+# TODO: Blank lines should be ignored
 # TODO: STRING and IDSTRING should be separated
-# TODO: Read through reference pdf
 # TODO: Commenting
