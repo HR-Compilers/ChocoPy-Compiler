@@ -316,7 +316,7 @@ class Lexer:
                 # Match an identifier.
                 chars = [self.ch]
                 self.__read_next_char()
-                while ('a' <= self.ch <= 'z') or ('A' <= self.ch <= 'Z') or (self.ch == '_'):
+                while ('a' <= self.ch <= 'z') or ('A' <= self.ch <= 'Z') or (self.ch == '_') or self.ch.isdigit(): 
                     chars.append(self.ch)
                     self.__read_next_char()
                 joined_str = ''.join(chars)
@@ -363,4 +363,10 @@ class Lexer:
 # replace tabs by spaces-> read manual
 # Why are we printing a line when we reach EOI?
 
+# TODO: Identifier can have integer, DONE
+# TODO: Blank lines should be ignored
 # TODO: Read through reference pdf
+# TODO: At the end of the input program, a DEDENT token is generated for each number remaining on the stack that is larger than zero.”
+# TODO: String literals should be limited ASCII
+# TODO: STRING and IDSTRING should be separated
+# TODO: Commenting
