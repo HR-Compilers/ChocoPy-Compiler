@@ -11,4 +11,5 @@ with open(filename) as f:
         print(token.type, token.lexeme if token.type != lexer.Tokentype.Newline else "\\n", token.location.line)
         token = lex.next()
     
+    # print the EOI token
     print(token.type, token.lexeme)

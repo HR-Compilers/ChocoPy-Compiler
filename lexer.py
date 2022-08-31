@@ -195,7 +195,7 @@ class Lexer:
 
         # Record the start location of the lexeme we're matching.
         loc = Location(self.line, self.col)
-        
+        print(loc)
 
         # Ensure indentation is correct, emitting (returning) an INDENT/DEDENT token if called for.
         if self.beginning_of_logical_line:
@@ -377,3 +377,4 @@ class Lexer:
 # TODO: Blank lines should be ignored
 # TODO: STRING and IDSTRING should be separated
 # TODO: Commenting
+# TODO: test file
