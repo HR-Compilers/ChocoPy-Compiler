@@ -190,12 +190,12 @@ class Lexer:
         
         # if we see a comment start, skip that line: read characters until we see a newline character
         if self.ch == '#':
-            while self.ch != '\n':
+            self.beginning_of_logical_line = False
+            while self.ch != '\n' and self.ch != '':
                 self.__read_next_char()
 
         # Record the start location of the lexeme we're matching.
         loc = Location(self.line, self.col)
-        print(loc)
 
         # Ensure indentation is correct, emitting (returning) an INDENT/DEDENT token if called for.
         if self.beginning_of_logical_line:
@@ -297,6 +297,8 @@ class Lexer:
         elif self.ch == '\n':
             token = Token(Tokentype.Newline, "<NEWLINE>", loc)
             self.__read_next_char()
+            
+            
         elif self.ch == '"':
             # Check for a string literal. Raise "Unterminated string"
             # syntax error exception if the string doesn't close on the line.
