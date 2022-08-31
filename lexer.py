@@ -368,11 +368,6 @@ class Lexer:
         return token
 
 
-# ------------------ QUESTIONS -----------------
-# Why are we printing a line when we reach EOI?
-# Should we ignore blank lines?
-# Should we separate STRING and IDSTRING tokens? - like in the reference
-
 # TODO: replace tabs by spaces-> read manual
 # TODO: Blank lines should be ignored
 # TODO: STRING and IDSTRING should be separated
