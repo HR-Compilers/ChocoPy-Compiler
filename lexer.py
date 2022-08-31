@@ -216,7 +216,11 @@ class Lexer:
 
         # Now, try to match a lexeme.
         if self.ch == '':
-            token = Token(Tokentype.EOI, '', loc)
+            if self.legal_indent_levels[-1] > 1:
+                token = Token(Tokentype.Dedent, "<DEDENT>", loc)
+                self.legal_indent_levels.pop()
+            else:
+                token = Token(Tokentype.EOI, '', loc)
         elif self.ch == '+':
             token = Token(Tokentype.OpPlus, self.ch, loc)
             self.__read_next_char()
@@ -296,18 +300,22 @@ class Lexer:
         elif self.ch == '"':
             # Check for a string literal. Raise "Unterminated string"
             # syntax error exception if the string doesn't close on the line.
-            # TODO: Check for escaped characters and throw exception
             self.__read_next_char()
             while self.ch != '"':
+                # Only ASCII characters between 32 and 126 are supported
+                if not 32 <= ord(self.ch) <= 126:
+                    raise SyntaxErrorException("Ill-formed string literal", loc)
+                # String should be closed before newline
                 if self.ch == '\n':
-                    raise SyntaxErrorException("Unterminated string", loc)
+                    raise SyntaxErrorException("Unterminated string literal", loc)
                 if self.ch == '\\':
                     self.__read_next_char()
+                    # only n, t, " and / can be escaped
                     if self.ch != 'n' and self.ch != '\\' and self.ch != 't' and self.ch != '\"':
-                        raise SyntaxErrorException("Ill-formed string", loc)
+                        raise SyntaxErrorException("Ill-formed string literal", loc)
                     pass
                 self.__read_next_char()
-            token = Token(Tokentype.StringLiteral, "STRING LITERAL", loc)
+            token = Token(Tokentype.StringLiteral, "<STRING>", loc)
             self.__read_next_char()
 
         else:
@@ -365,8 +373,9 @@ class Lexer:
 
 # TODO: Identifier can have integer, DONE
 # TODO: Blank lines should be ignored
-# TODO: Read through reference pdf
-# TODO: At the end of the input program, a DEDENT token is generated for each number remaining on the stack that is larger than zero.”
-# TODO: String literals should be limited ASCII
+# TODO: At the end of the input program, a DEDENT token is generated for 
+#       each number remaining on the stack that is larger than zero.” , DONE
+# TODO: String literals should be limited ASCII, DONE
 # TODO: STRING and IDSTRING should be separated
+# TODO: Read through reference pdf
 # TODO: Commenting
