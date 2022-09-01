@@ -370,8 +370,5 @@ class Lexer:
         return token
 
 
-# TODO: replace tabs by spaces-> read manual
-# TODO: Blank lines should be ignored
-# TODO: STRING and IDSTRING should be separated
 # TODO: Commenting
 # TODO: test file
