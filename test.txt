@@ -3,11 +3,11 @@ None pass break continue import
         del assert global nonlocal 
             try except raise finally async await yield lambda 
                 or and not is in
+
 + - * // %
+< > <= >= == != = ()[] , : . ->     # all operators
 
-< > <= >= == != = ()[] , : . -> 
-
-! / # unknown tokens
+! /     # unknown tokens
 
 True False 69 45 1234 420 999999999
 
