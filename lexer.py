@@ -344,22 +344,23 @@ class Lexer:
                         raise SyntaxErrorException("Ill-formed integer literal", loc)
                     else:
                         token = Token(Tokentype.IntegerLiteral, "0", loc)
-                    
-                chars = [self.ch]
-                self.__read_next_char()
-                # read until no more digits
-                while self.ch.isdigit():
-                    chars.append(self.ch)
-                    self.__read_next_char()
                 
-                # create an integer literal out of the character list
-                chars_to_int = int("".join([str(c) for c in chars]))
-                
-                # if integer literal larger than max, throw error
-                if chars_to_int > 2147483647:
-                    raise SyntaxErrorException("Ill-formed integer literal", loc)
                 else:
-                    token = Token(Tokentype.IntegerLiteral, ''.join(chars), loc)
+                    chars = [self.ch]
+                    self.__read_next_char()
+                    # read until no more digits
+                    while self.ch.isdigit():
+                        chars.append(self.ch)
+                        self.__read_next_char()
+                    
+                    # create an integer literal out of the character list
+                    chars_to_int = int("".join([str(c) for c in chars]))
+                    
+                    # if integer literal larger than max, throw error
+                    if chars_to_int > 2147483647:
+                        raise SyntaxErrorException("Ill-formed integer literal", loc)
+                    else:
+                        token = Token(Tokentype.IntegerLiteral, ''.join(chars), loc)
             else:
                 # Return Unknown if no other known token is matched.
                 token = Token(Tokentype.Unknown, self.ch, loc)
