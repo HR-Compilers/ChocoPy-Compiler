@@ -13,5 +13,6 @@ True False 69 45 1234 420 999999999
 
 "Good morning, how are \nyou doing today?"
 
-int a = 5
-int a1 = "hel\\lo" "hell\to"
+a = 5
+a1 = "hel\\lo" "hell\to"
+a_int = 6*6//0
