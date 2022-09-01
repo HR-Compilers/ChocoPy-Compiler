@@ -7,7 +7,7 @@ None pass break continue import
 
 < > <= >= == != = ()[] , : . -> 
 
-! /
+! / # unknown tokens
 
 True False 69 45 1234 420 999999999
 
