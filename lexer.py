@@ -304,12 +304,12 @@ class Lexer:
             # syntax error exception if the string doesn't close on the line.
             self.__read_next_char()
             while self.ch != '"':
+                if self.ch == '\n' or self.ch == '#':
+                    raise SyntaxErrorException("Unterminated string literal", loc)
                 # Only ASCII characters between 32 and 126 are supported
                 if not 32 <= ord(self.ch) <= 126:
                     raise SyntaxErrorException("Ill-formed string literal", loc)
                 # String should be closed before newline
-                if self.ch == '\n':
-                    raise SyntaxErrorException("Unterminated string literal", loc)
                 if self.ch == '\\':
                     self.__read_next_char()
                     # only n, t, " and / can be escaped
