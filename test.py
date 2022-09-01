@@ -1,14 +1,17 @@
 None pass break continue import 
     from as class if elif else while def return 
         del assert global nonlocal 
-            try except raise finally async away yield lambda 
+            try except raise finally async await yield lambda 
                 or and not is in
 + - * // %
 
-<><=>===!== ()[] , : . -> 
+< > <= >= == != = ()[] , : . -> 
+
+! /
 
 True False 69 45 1234 420 999999999
 
 "Good morning, how are \nyou doing today?"
 
 int a = 5
+int a1 = "hel\\lo" "hell\to"
