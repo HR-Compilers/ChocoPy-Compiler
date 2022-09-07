@@ -210,16 +210,19 @@ class Lexer:
                 if loc.col > self.legal_indent_levels[-1]:
                     raise SyntaxErrorException("Non matching indentation", loc)
                 else:
-                    token = Token(Tokentype.Dedent, "<DEDENT>", loc)
+                    token = Token(Tokentype.Dedent, "DEDENT", loc)
                     return token
             
 
         # Now, try to match a lexeme.
         if self.ch == '':
+            # at the end of the file, we first generate
+            # all remaining dedents as specified in manual
             if self.legal_indent_levels[-1] > 1:
-                token = Token(Tokentype.Dedent, "<DEDENT>", loc)
+                token = Token(Tokentype.Dedent, "DEDENT", loc)
                 self.legal_indent_levels.pop()
             else:
+                # '' signifies EOI
                 token = Token(Tokentype.EOI, '', loc)
         elif self.ch == '+':
             token = Token(Tokentype.OpPlus, self.ch, loc)
@@ -295,7 +298,7 @@ class Lexer:
             token = Token(Tokentype.Comma, self.ch, loc)
             self.__read_next_char()
         elif self.ch == '\n':
-            token = Token(Tokentype.Newline, "<NEWLINE>", loc)
+            token = Token(Tokentype.Newline, "NEWLINE", loc)
             self.__read_next_char()
             
             
@@ -303,21 +306,25 @@ class Lexer:
             # Check for a string literal. Raise "Unterminated string"
             # syntax error exception if the string doesn't close on the line.
             self.__read_next_char()
+            chars = []
             while self.ch != '"':
+                chars.append(self.ch)
+                # newline or comment means string hasn't been terminated
+                if self.ch == '\n' or self.ch == '#':
+                    raise SyntaxErrorException("Unterminated string literal", loc)
                 # Only ASCII characters between 32 and 126 are supported
                 if not 32 <= ord(self.ch) <= 126:
                     raise SyntaxErrorException("Ill-formed string literal", loc)
-                # String should be closed before newline
-                if self.ch == '\n':
-                    raise SyntaxErrorException("Unterminated string literal", loc)
+                # escape character
                 if self.ch == '\\':
                     self.__read_next_char()
                     # only n, t, " and / can be escaped
                     if self.ch != 'n' and self.ch != '\\' and self.ch != 't' and self.ch != '\"':
                         raise SyntaxErrorException("Ill-formed string literal", loc)
+                    chars.append(self.ch)
                     pass
                 self.__read_next_char()
-            token = Token(Tokentype.StringLiteral, "<STRING>", loc)
+            token = Token(Tokentype.StringLiteral, ''.join(chars), loc)
             self.__read_next_char()
 
         else:
@@ -326,6 +333,7 @@ class Lexer:
                 # Match an identifier.
                 chars = [self.ch]
                 self.__read_next_char()
+                # recall we can also have digits in identifiers, just not as a starting character
                 while ('a' <= self.ch <= 'z') or ('A' <= self.ch <= 'Z') or (self.ch == '_') or self.ch.isdigit(): 
                     chars.append(self.ch)
                     self.__read_next_char()
@@ -336,7 +344,6 @@ class Lexer:
                     token = Token(Tokentype.Identifier, joined_str, loc)
             elif self.ch.isdigit():
                 # Match a number literal.
-                
                 # if first character is a zero, there can be no more digits after
                 if self.ch == '0':
                     self.__read_next_char()
@@ -344,22 +351,23 @@ class Lexer:
                         raise SyntaxErrorException("Ill-formed integer literal", loc)
                     else:
                         token = Token(Tokentype.IntegerLiteral, "0", loc)
-                    
-                chars = [self.ch]
-                self.__read_next_char()
-                # read until no more digits
-                while self.ch.isdigit():
-                    chars.append(self.ch)
-                    self.__read_next_char()
                 
-                # create an integer literal out of the character list
-                chars_to_int = int("".join([str(c) for c in chars]))
-                
-                # if integer literal larger than max, throw error
-                if chars_to_int > 2147483647:
-                    raise SyntaxErrorException("Ill-formed integer literal", loc)
                 else:
-                    token = Token(Tokentype.IntegerLiteral, ''.join(chars), loc)
+                    chars = [self.ch]
+                    self.__read_next_char()
+                    # read until no more digits
+                    while self.ch.isdigit():
+                        chars.append(self.ch)
+                        self.__read_next_char()
+                    
+                    # create an integer literal out of the character list
+                    chars_to_int = int("".join([str(c) for c in chars]))
+                    
+                    # if integer literal larger than max, throw error
+                    if chars_to_int > 2147483647:
+                        raise SyntaxErrorException("Ill-formed integer literal", loc)
+                    else:
+                        token = Token(Tokentype.IntegerLiteral, ''.join(chars), loc)
             else:
                 # Return Unknown if no other known token is matched.
                 token = Token(Tokentype.Unknown, self.ch, loc)
@@ -368,7 +376,3 @@ class Lexer:
         self.beginning_of_logical_line = token.type == Tokentype.Newline
 
         return token
-
-
-# TODO: Commenting
-# TODO: test file

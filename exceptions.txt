@@ -1,0 +1,12 @@
+######### uncomment line to get syntax error ##########
+
+# 012 # ill formed integer
+# 1234567891234 # ill formed integer
+# "hellooo  # unterminated string
+# "hello\oo" # ill formed string
+
+# wrong indentation
+hello
+    hello
+        hello
+      hello
