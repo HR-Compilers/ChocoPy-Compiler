@@ -1,6 +1,3 @@
-# with target: parse as expr, check if you see = after
-# check to make sure that the expr matches target
-
 from lib2to3.pgen2.token import tok_name
 from lexer import Lexer, Tokentype, SyntaxErrorException
 import ast
@@ -205,8 +202,12 @@ class Parser:
             self.simple_stmt()
             self.match(Tokentype.Newline)
 
+    # with target: parse as expr, check if you see = after
+    # check to make sure that the expr matches target
+    # difficult!!
     def simple_stmt(self):
         ...
+    
     
     def block(self):
         ...
