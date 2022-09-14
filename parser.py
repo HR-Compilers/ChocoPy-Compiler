@@ -25,4 +25,44 @@ class Parser:
     # The file should return an AST if parsing is successful, 
     # otherwise a syntax-error exception is thrown.
     def parse(self):
-        return None
+        self.program()
+        self.match(Tokentype.EOI)
+
+    # program ::= [[var def | func def | class def]]* stmt*
+    def program(self):
+        while True:
+            if self.match_if(Tokentype.KwClass):
+                self.class_def()
+            elif self.match_if(Tokentype.KwDef):
+                self.func_def()
+            elif self.match_if(Tokentype.Identifier):
+                self.var_def()
+            else:
+                break
+        
+
+
+    def class_def(self):
+        self.match(Tokentype.KwClass)
+        self.match(Tokentype.Identifier)
+        self.match(Tokentype.ParenthesisL)
+        self.match(Tokentype.Identifier)
+        self.match(Tokentype.ParenthesisR)
+        self.match(Tokentype.Colon)
+        self.match(Tokentype.Newline)
+        self.match(Tokentype.Indent)
+        self.class_body()
+        self.match(Tokentype.Dedent)
+
+    def func_def(self):
+        self.match(Tokentype.kwDef)
+        ...
+
+    def var_def(self):
+        self.typed_var()
+        self.match(Tokentype.OpEq)
+        self.literal()
+        self.match(Tokentype.Newline)
+
+    def stmt(self):
+        ...
