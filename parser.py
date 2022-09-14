@@ -1,5 +1,6 @@
 from lexer import Lexer, Tokentype, SyntaxErrorException
-import ast_sol
+import ast
+
 class Parser:
     def __init__(self, f):
         self.lexer = Lexer(f)
@@ -19,7 +20,8 @@ class Parser:
             self.match(type)
             return True
         return False
-    # Finish implementing the parser. A call to parse, parses a single Boolean expression.
+
+    # Finish implementing the parser.
     # The file should return an AST if parsing is successful, 
     # otherwise a syntax-error exception is thrown.
     def parse(self):
