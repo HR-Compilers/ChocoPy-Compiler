@@ -1,3 +1,6 @@
+# with target: parse as expr, check if you see = after
+# check to make sure that the expr matches target
+
 from lexer import Lexer, Tokentype, SyntaxErrorException
 import ast
 
@@ -91,10 +94,30 @@ class Parser:
                 else:
                     self.var_def()
 
+    # def ID ( [[typed var [[, typed var]]* ]]? ) [[-> type]]? : NEWLINE INDENT func_body DEDENT
     def func_def(self):
         self.match(Tokentype.kwDef)
         self.match(Tokentype.Identifier)
+        self.match(Tokentype.ParenthesisL)
 
+        # [[typed_var [[, typed_var]]* ]]?
+        if self.token.type == Tokentype.Identifier:
+            self.typed_var()
+            while self.match_if(Tokentype.Comma):
+                self.typed_var()
+        
+        self.match(Tokentype.ParenthesisR)
+
+        # [[-> type]]?
+        if self.match_if(Tokentype.Arrow):
+            self._type()
+
+        self.match(Tokentype.Colon)
+        self.match(Tokentype.Newline)
+        self.func_body()
+        self.match(Tokentype.Dedent)
+        
+    # [[global_decl | nonlocal_decl | var def | func def 􏰲 stmt]]* stmt+
     def func_body(self):
         ...
     
