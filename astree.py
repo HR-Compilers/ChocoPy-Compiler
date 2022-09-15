@@ -1,4 +1,9 @@
+#
+# ASTree version 1.00
+#
+
 from enum import Enum
+from typing import Optional
 
 
 class Operator(Enum):
@@ -7,15 +12,16 @@ class Operator(Enum):
     Not = 2
     Eq = 3
     NotEq = 4
-    Lt = 5,
-    Gt = 6,
-    LtEq = 7,
-    GtEq = 8,
-    Plus = 9
-    Minus = 10
-    Mult = 11
-    IntDivide = 12
-    Modulus = 13
+    Lt = 5
+    Gt = 6
+    LtEq = 7
+    GtEq = 8
+    Is = 9
+    Plus = 10
+    Minus = 11
+    Mult = 12
+    IntDivide = 13
+    Modulus = 14
 
 
 class Node:
@@ -56,6 +62,7 @@ class IntegerLiteralExprNode(LiteralExprNode):
 
 
 class BooleanLiteralExprNode(LiteralExprNode):
+
     def __init__(self, value: bool):
         self.value = value
 
@@ -105,21 +112,21 @@ class MemberExprNode(ExprNode):
 
 class FunctionCallExprNode(ExprNode):
 
-    def __init__(self, identifier: IdentifierNode, args: [ExprNode]):
+    def __init__(self, identifier: IdentifierNode, args: list[ExprNode]):
         self.identifier = identifier
         self.args = args
 
 
 class MethodCallExprNode(ExprNode):
 
-    def __init__(self, member: MemberExprNode, args: [ExprNode]):
+    def __init__(self, member: MemberExprNode, args: list[Optional[ExprNode]]):
         self.member = member
         self.args = args
 
 
 class ListExprNode(ExprNode):
 
-    def __init__(self, elements: [ExprNode]):
+    def __init__(self, elements: list[ExprNode]):
         self.elements = elements
 
 
@@ -136,6 +143,12 @@ class ExprStmt(StmtNode):
         self.expr = expr
 
 
+class PassStmtNode(StmtNode):
+
+    def __init__(self):
+        pass
+
+
 class ReturnStmtNode(StmtNode):
 
     def __init__(self, expr: ExprNode):
@@ -144,14 +157,14 @@ class ReturnStmtNode(StmtNode):
 
 class AssignStmtNode(StmtNode):
 
-    def __init__(self, targets: [ExprNode], expr: ExprNode):
+    def __init__(self, targets: list[ExprNode], expr: ExprNode):
         self.targets = targets
         self.expr = expr
 
 
 class IfStmtNode(StmtNode):
 
-    def __init__(self, condition: ExprNode, then_body: [StmtNode], else_body: [StmtNode]):
+    def __init__(self, condition: ExprNode, then_body: list[StmtNode], else_body: list[StmtNode]):
         self.condition = condition
         self.then_body = then_body
         self.else_body = else_body
@@ -159,14 +172,14 @@ class IfStmtNode(StmtNode):
 
 class WhileStmtNode(StmtNode):
 
-    def __init__(self, condition: ExprNode, body: [StmtNode]):
+    def __init__(self, condition: ExprNode, body: list[StmtNode]):
         self.condition = condition
         self.body = body
 
 
 class ForStmtNode(StmtNode):
 
-    def __init__(self, identifier: IdentifierNode, iterable: ExprNode, body: [StmtNode]):
+    def __init__(self, identifier: IdentifierNode, iterable: ExprNode, body: list[StmtNode]):
         self.identifier = identifier
         self.iterable = iterable
         self.body = body
@@ -223,7 +236,7 @@ class NonLocalDeclNode(DeclarationNode):
 
 class ClassDefNode(DeclarationNode):
 
-    def __init__(self, name: IdentifierNode, super_class: IdentifierNode, declarations: [DeclarationNode]):
+    def __init__(self, name: IdentifierNode, super_class: IdentifierNode, declarations: list[DeclarationNode]):
         self.name = name
         self.super_class = super_class
         self.declarations = declarations
@@ -231,8 +244,9 @@ class ClassDefNode(DeclarationNode):
 
 class FuncDefNode(DeclarationNode):
 
-    def __init__(self, name: IdentifierNode, params: [TypedVarNode], return_type: TypeAnnotationNode,
-                 declarations: [DeclarationNode], statements: [StmtNode]):
+    def __init__(self, name: IdentifierNode, params: list[Optional[TypedVarNode]],
+                 return_type: Optional[TypeAnnotationNode], declarations: list[Optional[DeclarationNode]],
+                 statements: list[StmtNode]):
         self.name = name
         self.params = params
         self.return_type = return_type
@@ -242,6 +256,6 @@ class FuncDefNode(DeclarationNode):
 
 class ProgramNode(Node):
 
-    def __init__(self, declarations: [DeclarationNode], statements: [StmtNode]):
+    def __init__(self, declarations: list[Optional[DeclarationNode]], statements: list[Optional[StmtNode]]):
         self.declarations = declarations
         self.statements = statements
