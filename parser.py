@@ -1,4 +1,3 @@
-from lib2to3.pgen2.token import tok_name
 from lexer import Lexer, Tokentype, SyntaxErrorException
 import ast
 
@@ -206,14 +205,42 @@ class Parser:
     # check to make sure that the expr matches target
     # difficult!!
     def simple_stmt(self):
-        ...
-    
+        if self.match_if(Tokentype.KwPass):
+            return
+        elif self.match_if(Tokentype.KwReturn):
+            if self.token.type != Tokentype.Newline:
+                self.expr()
+        # now its either target or expr, so we match on expr
+        else:
+            self.expr()
+            # if the next token is an equals sign, it was actually a target
+            if self.token.type == Tokentype.OpEq:
+                # check that the expr also worked as a token
+                ...
+            # otherwise it was just an expr and we are done
     
     def block(self):
-        ...
+        self.match(Tokentype.Newline)
+        self.match(Tokentype.Indent)
+
+        self.stmt()
+        while not self.match_if(Tokentype.Dedent):
+            self.stmt()
     
     def literal(self):
-        ...
-    
+        if self.match_if(Tokentype.KwNone):
+            return
+        elif self.match_if(Tokentype.BoolTrueLiteral):
+            return
+        elif self.match_if(Tokentype.BoolFalseLiteral):
+            return
+        elif self.match_if(Tokentype.IntegerLiteral):
+            return
+        else:
+            self.match(Tokentype.StringLiteral)
+
     def expr(self):
+        ...
+
+    def cexpr(self):
         ...
