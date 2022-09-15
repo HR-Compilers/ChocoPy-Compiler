@@ -1,7 +1,3 @@
-#
-# T-603-THYD Compilers
-# Project: Lexer Skeleton for ChocoPy 2022
-#
 from enum import Enum
 from typing import NamedTuple
 
@@ -160,9 +156,6 @@ class Lexer:
         self.ch = self.f.read(1)
 
         if not self.ch:  # eof
-            # self.ch = '\n'
-            # self.line += 1
-            # self.col = 1
             self.eof = True
 
     def __init__(self, f):
@@ -183,9 +176,11 @@ class Lexer:
         """
         # Remove spaces, tabs, comments, and "empty" lines, if any, before matching the next Tokentype.
         # skip character if space or tab
-        if self.ch == ' ' or self.ch == '\t':
-            self.__read_next_char()
-            while (self.ch == ' ' or self.ch == '\t'):
+        if self.beginning_of_logical_line:
+            while self.ch == ' ' or self.ch == '\t' or self.ch == '\n':
+                self.__read_next_char()
+        else:
+            while self.ch == ' ' or self.ch == '\t':
                 self.__read_next_char()
         
         # if we see a comment start, skip that line: read characters until we see a newline character
