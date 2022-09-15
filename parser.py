@@ -321,9 +321,9 @@ class Parser:
     def bin_op(self):
         ...
 
-    def member_or_index(self):
-        self.cexpr()
-        if self.token.type
+    # def member_or_index(self):
+    #     self.cexpr()
+    #     if self.token.type
 
     def member_expr(self):
         ...

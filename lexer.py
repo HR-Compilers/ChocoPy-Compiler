@@ -210,7 +210,7 @@ class Lexer:
                 if loc.col > self.legal_indent_levels[-1]:
                     raise SyntaxErrorException("Non matching indentation", loc)
                 else:
-                    token = Token(Tokentype.Dedent, "DEDENT", loc)
+                    token = Token(Tokentype.Dedent, "<DEDENT>", loc)
                     return token
             
 
@@ -233,7 +233,7 @@ class Lexer:
                 token = Token(Tokentype.Arrow, self.ch, loc)
                 self.__read_next_char()
             else:
-                token = Token(Tokentype.OpMinus, self.ch, loc)
+                token = Token(Tokentype.OpMinus, '-', loc)
         elif self.ch == '*':
             token = Token(Tokentype.OpMultiply, self.ch, loc)
             self.__read_next_char()
@@ -298,7 +298,7 @@ class Lexer:
             token = Token(Tokentype.Comma, self.ch, loc)
             self.__read_next_char()
         elif self.ch == '\n':
-            token = Token(Tokentype.Newline, "NEWLINE", loc)
+            token = Token(Tokentype.Newline, "\\n", loc)
             self.__read_next_char()
             
             
@@ -306,9 +306,9 @@ class Lexer:
             # Check for a string literal. Raise "Unterminated string"
             # syntax error exception if the string doesn't close on the line.
             self.__read_next_char()
-            chars = []
+            chars = ""
             while self.ch != '"':
-                chars.append(self.ch)
+                chars += self.ch
                 # newline or comment means string hasn't been terminated
                 if self.ch == '\n' or self.ch == '#':
                     raise SyntaxErrorException("Unterminated string literal", loc)
@@ -317,14 +317,24 @@ class Lexer:
                     raise SyntaxErrorException("Ill-formed string literal", loc)
                 # escape character
                 if self.ch == '\\':
+                    chars = chars[:-1]
                     self.__read_next_char()
                     # only n, t, " and / can be escaped
                     if self.ch != 'n' and self.ch != '\\' and self.ch != 't' and self.ch != '\"':
                         raise SyntaxErrorException("Ill-formed string literal", loc)
-                    chars.append(self.ch)
+                    else:
+                        if self.ch == 'n':
+                            next_char = '\n'
+                        elif self.ch == '\\':
+                            next_char = '\\'
+                        elif self.ch == 't':
+                            next_char = '\t'
+                        else:
+                            next_char = '\"'
+                    chars += next_char
                     pass
                 self.__read_next_char()
-            token = Token(Tokentype.StringLiteral, ''.join(chars), loc)
+            token = Token(Tokentype.StringLiteral, chars, loc)
             self.__read_next_char()
 
         else:

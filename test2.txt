@@ -1,2 +1,1 @@
-class Man(Hello):
-    pass
+"hel\to\noo"
