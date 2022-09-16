@@ -303,7 +303,7 @@ class Parser:
     def nexpr(self):
         if self.match_if(Tokentype.OpMinus):
             self.nexpr()
-        self.mi_expr()
+        self.mem_or_ind_expr()
     
     # mem_or_ind_expr   -> fexpr { . id_or_func | '[' expr ']' }
     def mem_or_ind_expr(self):
