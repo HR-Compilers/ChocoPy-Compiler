@@ -1,9 +1,9 @@
-class Foo(object):
-    x:int = 0
+def foo(x:int) -> bool:
+    a:int = 0
+    b:int = 1
+    def bar(y: int) -> int:
+        a:int = 2 
+        return y
+    return bar(x) > a
 
-    def set(self:"Foo", x:int) -> object:
-        self.x = x
-
-f = Foo()
-f.set(1)
-print(f.x)
+foo(1)
