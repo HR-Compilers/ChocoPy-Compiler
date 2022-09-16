@@ -1,29 +1,6 @@
 from lexer import Lexer, Tokentype, SyntaxErrorException
 import ast
 
-"""
-expr ::=  cexpr
-        | not expr
-        | expr [[and | or]] expr
-        | expr if expr else expr
-
-removing left recursion:
-expr ::=  cexpr expr' | not expr expr'
-expr' ::= [[and | or]] expr expr'
-        | if expr else expr expr' 
-        | empty
-
-          B1    B2                    B3                B4           B5          B6
-cexpr ::= ID | literal | [ [[expr [[, expr]]* ]]? ] | ( expr ) | member_expr | index_expr
-                        B7                                     B8                           a1                B9
-        | member_expr ( [[expr [[, expr]]* ]]? ) | ID ( [[expr [[, expr]]* ]]? ) | cexpr bin_op cexpr | | - cexpr
-
-removing left recursion:
-cexpr ::= B1 cexpr' | ... | B9 cexpr'
-cexpr' ::= bin_op cexpr cexpr' | empty
-
-"""
-
 class Parser:
     def __init__(self, f):
         self.lexer = Lexer(f)
@@ -239,6 +216,7 @@ class Parser:
             # if the next token is an equals sign, it was actually a target
             # fix with node by AST: ID, member_expr, index_expr
             if self.token.type == Tokentype.OpEq:
+                # TODO
                 ...
             
             # otherwise it was just an expr and we are done
@@ -327,7 +305,7 @@ class Parser:
             self.nexpr()
         self.mi_expr()
     
-    # mi_expr   -> fexpr { . i_or_f | '[' expr ']' }
+    # mem_or_ind_expr   -> fexpr { . id_or_func | '[' expr ']' }
     def mem_or_ind_expr(self):
         self.fexpr()
         while self.token.type in [Tokentype.Period, Tokentype.BracketL]:
@@ -341,20 +319,33 @@ class Parser:
     def id_or_func(self):
         self.match(Tokentype.Identifier)
         if self.match_if(Tokentype.ParenthesisL):
-            self.args()
-            self.match(Tokentype.ParenthesisR)
-    
-    # args ::= expr [[, expr]]*
-    def args(self):
-        self.expr()
-        if self.match_if(Tokentype.Comma):
-            self.expr()
-    
+            if not self.match_if(Tokentype.ParenthesisR):
+                self.expr()
+                while self.match_if(Tokentype.Comma):
+                    self.expr()
+
+    # fexpr -> [ [[expr {, expr}]] ]
+    #          | ( expr )
+    #          | literal
+    #          | id_or_func
     def fexpr(self):
-        ...
+        if self.match_if(Tokentype.BracketL):
+            if not self.match_if(Tokentype.BracketR):
+                self.expr()
+                while self.match_if(Tokentype.Comma):
+                    self.expr()
+        elif self.match_if(Tokentype.ParenthesisL):
+            self.expr()
+            self.match(Tokentype.ParenthesisR)
+        elif self.token.type in [Tokentype.KwNone, Tokentype.BoolTrueLiteral, Tokentype.BoolFalseLiteral\
+                                ,Tokentype.IntegerLiteral, Tokentype.StringLiteral]:
+            self.literal()
+        else:
+            self.id_or_func()
     
-
-
-
+    # target ::= ID
+    #          | mem_expr
+    #          | index_expr
     def target(self):
-        ...
+        if not self.match_if(Tokentype.Identifier):
+            self.mem_or_ind_expr()
