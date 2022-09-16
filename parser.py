@@ -160,7 +160,7 @@ class Parser:
         self.match(Tokentype.Identifier)
         self.match(Tokentype.Newline)
 
-    # var_def ::= typed var = literal NEWLINE
+    # var_def ::= typed_var = literal NEWLINE
     def var_def(self):
         self.typed_var()
         self.match(Tokentype.OpAssign)
@@ -223,7 +223,6 @@ class Parser:
     def block(self):
         self.match(Tokentype.Newline)
         self.match(Tokentype.Indent)
-
         self.stmt()
         while not self.match_if(Tokentype.Dedent):
             self.stmt()
@@ -248,7 +247,6 @@ class Parser:
     #
     # rewrite in EBNF to remove left-recursion:
     # expr ::= or_expr [if expr else expr]
-    # not_expr ::= not expr | cexpr
     def expr(self):        
         self.or_expr()
         if self.match_if(Tokentype.KwIf):
@@ -267,7 +265,8 @@ class Parser:
         self.not_expr()
         while self.match_if(Tokentype.OpAnd):
             self.not_expr()
-    
+
+    # not_expr ::= not expr | cexpr
     def not_expr(self):
         if self.match_if(Tokentype.OpNot):
             # NOTE: Yngvi-sama in his code wrote "not expr", we think it is incorrect, 
@@ -309,7 +308,7 @@ class Parser:
         while self.match_if(Tokentype.OpMultiply) or self.match_if(Tokentype.OpIntDivide) or self.match_if(Tokentype.OpModulus):
             self.nexpr()
 
-    # nexpr     -> - nexpr | mi_expr
+    # nexpr -> - nexpr | mem_or_ind_expr
     def nexpr(self):
         if self.match_if(Tokentype.OpMinus):
             self.nexpr()
