@@ -115,6 +115,7 @@ class Parser:
         self.func_body()
         self.match(Tokentype.Dedent)
         
+    # func_body requires at stmt at the end, bit weird??
     # func_body ::= [[global_decl | nonlocal_decl | var def | func def]]* stmt+
     def func_body(self):
         while self.token.type in [Tokentype.KwGlobal, Tokentype.KwNonLocal, Tokentype.KwDef, Tokentype.Identifier]:
@@ -201,7 +202,6 @@ class Parser:
 
         else:
             self.simple_stmt()
-            print("hii")
             self.match(Tokentype.Newline)
 
     # with target: parse as expr, check if you see = after
