@@ -130,6 +130,8 @@ class Parser:
             # Identifier
             elif self.peek().type == Tokentype.Colon:
                 self.var_def()
+            else:
+                break
 
         # need one or more statements
         self.stmt()
