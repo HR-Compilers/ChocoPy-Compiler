@@ -293,7 +293,7 @@ class Lexer:
             token = Token(Tokentype.Comma, self.ch, loc)
             self.__read_next_char()
         elif self.ch == '\n':
-            token = Token(Tokentype.Newline, "\\n", loc)
+            token = Token(Tokentype.Newline, '\n', loc)
             self.__read_next_char()
             
             
