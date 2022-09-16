@@ -113,6 +113,8 @@ class Parser:
         self.match(Tokentype.Newline)
         self.match(Tokentype.Indent)
         self.func_body()
+
+        # NOTE: Should we have a newline match here?
         self.match(Tokentype.Dedent)
         
     # func_body requires a stmt at the end, bit weird??
@@ -214,9 +216,9 @@ class Parser:
             self.expr()
             # if the next token is an equals sign, it was actually a target
             # fix with node by AST: ID, member_expr, index_expr
-            if self.token.type == Tokentype.OpEq:
+            if self.match_if(Tokentype.OpAssign):
                 # TODO
-                ...
+                self.expr()
             
             # otherwise it was just an expr and we are done
     
@@ -325,7 +327,7 @@ class Parser:
                 self.expr()
                 self.match(Tokentype.BracketR)
 
-    # id_or_func -> ID [ '(' arguments ')' ]
+    # id_or_func -> ID [ '(' [expr {, expr } ] ')' ]
     def id_or_func(self):
         self.match(Tokentype.Identifier)
         if self.match_if(Tokentype.ParenthesisL):
