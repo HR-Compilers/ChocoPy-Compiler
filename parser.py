@@ -27,6 +27,7 @@ class Parser:
                 type, self.token.type, self.token.lexeme
             )
             raise SyntaxErrorException(text, self.token.location)
+            
     # Helper function
     def match_if(self, type):
         if self.token.type == type:
