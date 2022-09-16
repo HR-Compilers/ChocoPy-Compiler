@@ -237,7 +237,7 @@ class Parser:
         else:
             self.expr()
             # if the next token is an equals sign, it was actually a target
-            # fix with node by AST: ID, member_expr, index_ex[r]
+            # fix with node by AST: ID, member_expr, index_expr
             if self.token.type == Tokentype.OpEq:
                 ...
             
@@ -263,8 +263,6 @@ class Parser:
         else:
             self.match(Tokentype.StringLiteral)
 
-    # if else -> or -> and -> not
-    #
     # precedence:
     # expr ::=  or_expr if expr else expr | or_expr
     # or_expr ::= or_expr or and_expr | and_expr
@@ -273,46 +271,90 @@ class Parser:
     #
     # rewrite in EBNF to remove left-recursion:
     # expr ::= or_expr [if expr else expr]
-    # or_expr ::= and_expr {or_expr or and_expr}
-    # and_expr ::= not expr {and_expr and not_expr}
-    # not_expr ::= no
+    # or_expr ::= and_expr {or and_expr}
+    # and_expr ::= not_expr {and not_expr}
+    # not_expr ::= not expr | cexpr
+    def expr(self):        
+        self.or_expr()
+        if self.match_if(Tokentype.KwIf):
+            self.expr()
+            self.match(Tokentype.KwElse)
+            self.expr()
 
-    def expr(self):
+    def or_expr(self):
+        self.and_expr()
+        while self.token.type == Tokentype.OpOr:
+            self.and_expr()
+    
+    def and_expr(self):
+        self.not_expr()
+        while self.token.type == Tokentype.OpAnd:
+            self.not_expr()
+    
+    def not_expr(self):
+        if self.match_if(Tokentype.OpNot):
+            # NOTE: Yngvi-sama in his code wrote "not expr", we think it is incorrect, 
+            # and changed it with "expr" 
+            self.expr()
+        else:
+            self.cexpr()
+            
+    # cexpr     -> aexpr [ rel_op aexpr ]
+    # rel_op    -> == | != | ... | is
+    def cexpr(self):
+        self.aexpr()
+        if self.token.type in [Tokentype.OpEq, Tokentype.OpNotEq, Tokentype.OpGt, Tokentype.OpIs\
+                              ,Tokentype.OpGtEq,Tokentype.OpLt, Tokentype.OpLtEq]:
+            self.aexpr()
+
+    # aexpr     -> mexpr { add_op mexpr }
+    # add_op    -> + | -  
+    def aexpr(self):
+        self.mexpr()
+        while self.token.type in [Tokentype.OpPlus, Tokentype.OpMinus]:
+            self.mexpr()
+    
+    # mexpr     -> nexpr { mul_op nexpr }
+    # mul_op    -> * | // | %
+    def mexpr(self):
+        self.nexpr()
+        while self.token.type in [Tokentype.OpMultiply, Tokentype.OpIntDivide, Tokentype.OpModulus]:
+            self.nexpr()
+
+    # nexpr     -> - nexpr | mi_expr
+    def nexpr(self):
+        if self.match_if(Tokentype.OpMinus):
+            self.nexpr()
+        self.mi_expr()
+    
+    # mi_expr   -> fexpr { . i_or_f | '[' expr ']' }
+    def mem_or_ind_expr(self):
+        self.fexpr()
+        while self.token.type in [Tokentype.Period, Tokentype.BracketL]:
+            if self.token.type == Tokentype.Period:
+                self.id_or_func()
+            else:
+                self.expr()
+                self.match(Tokentype.BracketR)
+
+    # id_or_func -> ID [ '(' arguments ')' ]
+    def id_or_func(self):
+        self.match(Tokentype.Identifier)
+        if self.match_if(Tokentype.ParenthesisL):
+            self.args()
+            self.match(Tokentype.ParenthesisR)
+    
+    # args ::= expr [[, expr]]*
+    def args(self):
+        self.expr()
+        if self.match_if(Tokentype.Comma):
+            self.expr()
+    
+    def fexpr(self):
         ...
     
-    def bin_op(self):
-        ...
 
-    def member_expr(self):
-        ...
-    
-    def index_expr(self):
-        ...
+
 
     def target(self):
         ...
-    
-
-"""
-expr -> or_expr if expr else expr
-or_expr -> and_expr
-
-
-cexpr -> aexpr [relop aexpr]
-c_op ->
-aexpr -> mexpr {add_op mexpr}
-add_op ->
-mexpr -> nexpr {mul_op nexpr}
-m_op -> * | // | %
-nexpr -> - nexpr | mi_expr
-mi_expr -> fexpr { . id_or f | '[' expr '] }
-id_or_f -> ID [ '(' [ expr {, expr }] ')' ]
-
-
-# fexpr: id or f
-        literal
-        ( expr )
-        '[' [[expr [[, expr]]* ]]?
-"""     
-        
-
