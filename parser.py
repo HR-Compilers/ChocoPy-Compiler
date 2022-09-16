@@ -237,9 +237,10 @@ class Parser:
         else:
             self.expr()
             # if the next token is an equals sign, it was actually a target
+            # fix with node by AST: ID, member_expr, index_ex[r]
             if self.token.type == Tokentype.OpEq:
-                # check that the expr also worked as a token
                 ...
+            
             # otherwise it was just an expr and we are done
     
     def block(self):
@@ -262,68 +263,25 @@ class Parser:
         else:
             self.match(Tokentype.StringLiteral)
 
-    # expr ::=  cexpr expr' | not expr expr'
+    # if else -> or -> and -> not
+    #
+    # precedence:
+    # expr ::=  or_expr if expr else expr | or_expr
+    # or_expr ::= or_expr or and_expr | and_expr
+    # and_expr ::= and_expr and not_expr | not_expr
+    # not_expr ::= not expr | cexpr
+    #
+    # rewrite in EBNF to remove left-recursion:
+    # expr ::= or_expr [if expr else expr]
+    # or_expr ::= and_expr {or_expr or and_expr}
+    # and_expr ::= not expr {and_expr and not_expr}
+    # not_expr ::= no
+
     def expr(self):
-        if self.token.type == Tokentype.OpNot:
-            self.expr()
-            self.expr_m()
-        else:
-            self.cexpr()
-            self.expr_m()
-
-    # expr' ::= [[and | or]] expr expr'
-    #          | if expr else expr expr'
-    #          | empty
-    def expr_m(self):
-        if self.token.type == Tokentype.OpAnd:
-            self.expr()
-            self.expr_m()
-        elif self.token.type == Tokentype.OpOr:
-            self.expr()
-            self.expr_m()
-        elif self.match_if(Tokentype.KwIf):
-            self.expr()
-            self.match(Tokentype.KwElse)
-            self.expr()
-            self.expr_m()
-        else:
-            return
-    # cexpr ::= ID | literal | [ [[expr [[, expr]]* ]]? ] | ( expr ) | member_expr | index_expr
-    #          | member_expr ( [[expr [[, expr]]* ]]? ) | ID ( [[expr [[, expr]]* ]]? ) | cexpr bin_op cexpr | | - cexpr
-    #               
-    # removing left recursion:
-    # cexpr ::= B1 cexpr' | ... | B9 cexpr'
-    # cexpr' ::= bin_op cexpr cexpr' | empty  
-    def cexpr(self):
-        if self.match_if(Tokentype.Identifier):
-            if self.match_if(Tokentype.ParenthesisL):
-                ...
-            else:
-                return
-        elif self.match_if(Tokentype.BracketL):
-            ...
-        elif self.match_if(Tokentype.ParenthesisL):
-            self.expr()
-        elif self.token.type in [Tokentype.KwNone, Tokentype.BoolTrueLiteral, Tokentype.BoolFalseLiteral\
-                                ,Tokentype.IntegerLiteral, Tokentype.StringLiteral]:
-            self.literal()
-        elif self.match_if(Tokentype.OpMinus):
-            self.cexpr()
-
-    def cexpr_m(self):
-        if self.token.type in [Tokentype.OpPlus, Tokentype.OpMinus, Tokentype.OpMultiply, Tokentype.OpIntDivide\
-                              ,Tokentype.OpModulus, Tokentype.OpGt, Tokentype.OpGtEq, Tokentype.OpLt, Tokentype.OpLtEq\
-                              ,Tokentype.OpNotEq, Tokentype.OpEq]:
-            self.bin_op()
-        else:
-            return
+        ...
     
     def bin_op(self):
         ...
-
-    # def member_or_index(self):
-    #     self.cexpr()
-    #     if self.token.type
 
     def member_expr(self):
         ...
@@ -334,6 +292,27 @@ class Parser:
     def target(self):
         ...
     
-        
+
+"""
+expr -> or_expr if expr else expr
+or_expr -> and_expr
+
+
+cexpr -> aexpr [relop aexpr]
+c_op ->
+aexpr -> mexpr {add_op mexpr}
+add_op ->
+mexpr -> nexpr {mul_op nexpr}
+m_op -> * | // | %
+nexpr -> - nexpr | mi_expr
+mi_expr -> fexpr { . id_or f | '[' expr '] }
+id_or_f -> ID [ '(' [ expr {, expr }] ')' ]
+
+
+# fexpr: id or f
+        literal
+        ( expr )
+        '[' [[expr [[, expr]]* ]]?
+"""     
         
 
