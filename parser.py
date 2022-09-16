@@ -27,7 +27,7 @@ class Parser:
                 type, self.token.type, self.token.lexeme
             )
             raise SyntaxErrorException(text, self.token.location)
-            
+
     # Helper function
     def match_if(self, type):
         if self.token.type == type:
@@ -75,8 +75,7 @@ class Parser:
 
     # class_body ::= pass NEWLINE | [[var_def | func_def]]+
     def class_body(self):
-        if self.token.type == Tokentype.KwPass:
-            self.match(Tokentype.KwPass)
+        if self.match_if(Tokentype.KwPass):
             self.match(Tokentype.Newline)
         else:
             # we must have at least one var_def or func_def
@@ -116,7 +115,7 @@ class Parser:
         self.func_body()
         self.match(Tokentype.Dedent)
         
-    # func_body requires at stmt at the end, bit weird??
+    # func_body requires a stmt at the end, bit weird??
     # func_body ::= [[global_decl | nonlocal_decl | var def | func def]]* stmt+
     def func_body(self):
         while self.token.type in [Tokentype.KwGlobal, Tokentype.KwNonLocal, Tokentype.KwDef, Tokentype.Identifier]:
@@ -127,13 +126,9 @@ class Parser:
             elif self.token.type == Tokentype.KwDef:
                 self.func_def()
             # Identifier
-            else:
-                if self.peek().type == Tokentype.Colon:
-                    self.var_def()
-                else:
-                    # move on to stmt
-                    break
-        
+            elif self.peek().type == Tokentype.Colon:
+                self.var_def()
+
         # need one or more statements
         self.stmt()
         while self.token.type != Tokentype.Dedent:
