@@ -1,5 +1,5 @@
 #
-# ASTree version 1.00
+# ASTree version 1.02
 #
 
 from enum import Enum
@@ -164,9 +164,11 @@ class AssignStmtNode(StmtNode):
 
 class IfStmtNode(StmtNode):
 
-    def __init__(self, condition: ExprNode, then_body: list[StmtNode], else_body: list[StmtNode]):
+    def __init__(self, condition: ExprNode, then_body: list[StmtNode],
+                 elifs: list[Optional[tuple[ExprNode, StmtNode]]], else_body: list[StmtNode]):
         self.condition = condition
         self.then_body = then_body
+        self.elifs = elifs
         self.else_body = else_body
 
 
@@ -200,7 +202,7 @@ class ClassTypeAnnotationNode(TypeAnnotationNode):
 
 class ListTypeAnnotationNode(TypeAnnotationNode):
 
-    def __init__(self, elem_type: ClassTypeAnnotationNode):
+    def __init__(self, elem_type: TypeAnnotationNode):
         self.elem_type = elem_type
 
 
