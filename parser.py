@@ -15,6 +15,7 @@ class Parser:
 
     # Helper function.
     def match(self, type):
+        print(self.token.type)
         if self.token.type == type:
             if self.peek_token is None:
                 self.token = self.lexer.next()
@@ -50,7 +51,7 @@ class Parser:
             elif self.token.type == Tokentype.KwDef:
                 self.func_def()
             else:
-                if self.peek() == Tokentype.Colon:
+                if self.peek().type == Tokentype.Colon:
                     self.var_def()
                 else:
                     break
@@ -92,7 +93,7 @@ class Parser:
 
     # func_def ::= def ID ( [[typed var [[, typed var]]* ]]? ) [[-> type]]? : NEWLINE INDENT func_body DEDENT
     def func_def(self):
-        self.match(Tokentype.kwDef)
+        self.match(Tokentype.KwDef)
         self.match(Tokentype.Identifier)
         self.match(Tokentype.ParenthesisL)
 
@@ -110,6 +111,7 @@ class Parser:
 
         self.match(Tokentype.Colon)
         self.match(Tokentype.Newline)
+        self.match(Tokentype.Indent)
         self.func_body()
         self.match(Tokentype.Dedent)
         
@@ -124,7 +126,7 @@ class Parser:
                 self.func_def()
             # Identifier
             else:
-                if self.peek() == Tokentype.Colon:
+                if self.peek().type == Tokentype.Colon:
                     self.var_def()
                 else:
                     # move on to stmt
@@ -146,7 +148,7 @@ class Parser:
         if self.match_if(Tokentype.BracketL):
             self._type()
             self.match(Tokentype.BracketR)
-        else:
+        elif not self.match_if(Tokentype.StringLiteral):
             self.match(Tokentype.Identifier)
 
     # global_decl ::= global ID NEWLINE
@@ -164,7 +166,7 @@ class Parser:
     # var_def ::= typed var = literal NEWLINE
     def var_def(self):
         self.typed_var()
-        self.match(Tokentype.OpEq)
+        self.match(Tokentype.OpAssign)
         self.literal()
         self.match(Tokentype.Newline)
 
@@ -199,6 +201,7 @@ class Parser:
 
         else:
             self.simple_stmt()
+            print("hii")
             self.match(Tokentype.Newline)
 
     # with target: parse as expr, check if you see = after
@@ -249,8 +252,6 @@ class Parser:
     #
     # rewrite in EBNF to remove left-recursion:
     # expr ::= or_expr [if expr else expr]
-    # or_expr ::= and_expr {or and_expr}
-    # and_expr ::= not_expr {and not_expr}
     # not_expr ::= not expr | cexpr
     def expr(self):        
         self.or_expr()
@@ -259,14 +260,16 @@ class Parser:
             self.match(Tokentype.KwElse)
             self.expr()
 
+    # or_expr ::= and_expr {or and_expr}
     def or_expr(self):
         self.and_expr()
-        while self.token.type == Tokentype.OpOr:
+        while self.match_if(Tokentype.OpOr):
             self.and_expr()
-    
+
+    # and_expr ::= not_expr {and not_expr}
     def and_expr(self):
         self.not_expr()
-        while self.token.type == Tokentype.OpAnd:
+        while self.match_if(Tokentype.OpAnd):
             self.not_expr()
     
     def not_expr(self):
@@ -281,22 +284,33 @@ class Parser:
     # rel_op    -> == | != | ... | is
     def cexpr(self):
         self.aexpr()
-        if self.token.type in [Tokentype.OpEq, Tokentype.OpNotEq, Tokentype.OpGt, Tokentype.OpIs\
-                              ,Tokentype.OpGtEq,Tokentype.OpLt, Tokentype.OpLtEq]:
+        if self.match_if(Tokentype.OpEq):
+            self.aexpr()
+        elif self.match_if(Tokentype.OpNotEq):
+            self.aexpr()
+        elif self.match_if(Tokentype.OpGt):
+            self.aexpr()
+        elif self.match_if(Tokentype.OpGtEq):
+            self.aexpr()
+        elif self.match_if(Tokentype.OpLt):
+            self.aexpr()
+        elif self.match_if(Tokentype.OpLtEq):
+            self.aexpr()
+        elif self.match_if(Tokentype.OpIs):
             self.aexpr()
 
     # aexpr     -> mexpr { add_op mexpr }
     # add_op    -> + | -  
     def aexpr(self):
         self.mexpr()
-        while self.token.type in [Tokentype.OpPlus, Tokentype.OpMinus]:
+        while self.match_if(Tokentype.OpPlus) or self.match_if(Tokentype.OpMinus):
             self.mexpr()
     
     # mexpr     -> nexpr { mul_op nexpr }
     # mul_op    -> * | // | %
     def mexpr(self):
         self.nexpr()
-        while self.token.type in [Tokentype.OpMultiply, Tokentype.OpIntDivide, Tokentype.OpModulus]:
+        while self.match_if(Tokentype.OpMultiply) or self.match_if(Tokentype.OpIntDivide) or self.match_if(Tokentype.OpModulus):
             self.nexpr()
 
     # nexpr     -> - nexpr | mi_expr
@@ -309,9 +323,10 @@ class Parser:
     def mem_or_ind_expr(self):
         self.fexpr()
         while self.token.type in [Tokentype.Period, Tokentype.BracketL]:
-            if self.token.type == Tokentype.Period:
+            if self.match_if(Tokentype.Period):
                 self.id_or_func()
             else:
+                self.match(Tokentype.BracketL)
                 self.expr()
                 self.match(Tokentype.BracketR)
 
@@ -319,7 +334,7 @@ class Parser:
     def id_or_func(self):
         self.match(Tokentype.Identifier)
         if self.match_if(Tokentype.ParenthesisL):
-            if not self.match_if(Tokentype.ParenthesisR):
+            while not self.match_if(Tokentype.ParenthesisR):
                 self.expr()
                 while self.match_if(Tokentype.Comma):
                     self.expr()
