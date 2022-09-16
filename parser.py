@@ -337,7 +337,7 @@ class Parser:
                 while self.match_if(Tokentype.Comma):
                     self.expr()
 
-    # fexpr -> [ [[expr {, expr}]] ]
+    # fexpr -> [ [[expr {, expr}]]? ]
     #          | ( expr )
     #          | literal
     #          | id_or_func
@@ -347,6 +347,7 @@ class Parser:
                 self.expr()
                 while self.match_if(Tokentype.Comma):
                     self.expr()
+                self.match(Tokentype.BracketR)
         elif self.match_if(Tokentype.ParenthesisL):
             self.expr()
             self.match(Tokentype.ParenthesisR)
