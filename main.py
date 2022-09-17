@@ -7,7 +7,7 @@ import lexer as lexer
 
 mypath = "tests/"
 files = [f for f in listdir(mypath) if isfile(join(mypath, f))]
-filtered_files = [element for element in files if element.endswith('.py') and not element.startswith('bad')]
+filtered_files = ["tests/" + element for element in files if element.endswith('.py') and not element.startswith('bad')]
 
 for filename in filtered_files:
     with open(filename) as f:
