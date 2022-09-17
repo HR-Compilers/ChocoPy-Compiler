@@ -5,3 +5,4 @@ def foo(x:int) -> bool:
     return x > z
 
 foo(1)
+

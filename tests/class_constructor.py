@@ -6,3 +6,4 @@ class Foo(object):
 
 f = Foo(1)
 print(f.x)
+

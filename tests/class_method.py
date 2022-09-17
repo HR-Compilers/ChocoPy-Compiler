@@ -7,3 +7,4 @@ class Foo(object):
 f = Foo()
 f.set(1)
 print(f.x)
+

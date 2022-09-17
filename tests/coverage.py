@@ -36,3 +36,4 @@ class bar(object):
 print(bar().baz([1,2]))
 
 
+

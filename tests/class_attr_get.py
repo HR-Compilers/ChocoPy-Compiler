@@ -3,3 +3,4 @@ class Foo(object):
 
 f = Foo()
 print(f.x)
+

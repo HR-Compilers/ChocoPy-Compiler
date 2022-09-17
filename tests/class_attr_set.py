@@ -3,3 +3,4 @@ class Foo(object):
 
 f = Foo()
 f.x = 2
+
