@@ -251,7 +251,7 @@ class Parser:
     def stmt(self):
         if self.match_if(Tokentype.KwIf):
             elifs = []
-            else_body = None
+            else_body = []
 
             cond_node = self.expr()
             self.match(Tokentype.Colon)
@@ -322,7 +322,7 @@ class Parser:
                 return ast.AssignStmtNode(targets, expr_node)
             else:
                 # otherwise it was just an expr and we are done
-                return ast.ExprStmt(expr_or_target_node)
+                return expr_or_target_node
 
     def block(self):
         self.match(Tokentype.Newline)
@@ -457,7 +457,7 @@ class Parser:
         node = self.fexpr()
         while self.token.type in [Tokentype.Period, Tokentype.BracketL]:
             if self.match_if(Tokentype.Period):
-                id_node = self.id_or_func()
+                id_node = self.id_or_func(as_identifier=True)
                 node = ast.MemberExprNode(node, id_node)
             else:
                 self.match(Tokentype.BracketL)
@@ -467,7 +467,7 @@ class Parser:
         return node
 
     # id_or_func -> ID [ '(' [expr {, expr } ] ')' ]
-    def id_or_func(self):
+    def id_or_func(self, as_identifier=False):
         lexeme = self.token.lexeme
         self.match(Tokentype.Identifier)
         id_or_func_node = ast.IdentifierNode(lexeme)
@@ -480,6 +480,8 @@ class Parser:
                 self.match(Tokentype.ParenthesisR)
             return ast.FunctionCallExprNode(id_or_func_node, args)
         else:
+            if as_identifier:
+                return id_or_func_node
             return ast.IdentifierExprNode(id_or_func_node)
 
     # fexpr -> [ [[expr {, expr}]]? ]

@@ -1,3 +1,4 @@
+from fileinput import filename
 from os import listdir
 from os.path import isfile, join
 
@@ -13,6 +14,7 @@ filtered_files = ["tests/" + element for element in files if element.endswith('.
 filtered_files.sort()
 
 for filename in filtered_files:
+#filename = "tests/class_attr_get.py"
     with open(filename) as f:
         print('\n' + filename)
         p = parser.Parser(f)

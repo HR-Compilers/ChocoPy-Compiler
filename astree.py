@@ -151,7 +151,7 @@ class PassStmtNode(StmtNode):
 
 class ReturnStmtNode(StmtNode):
 
-    def __init__(self, expr: ExprNode):
+    def __init__(self, expr: Optional[ExprNode]):
         self.expr = expr
 
 
