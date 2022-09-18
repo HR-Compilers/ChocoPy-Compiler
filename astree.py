@@ -1,5 +1,5 @@
 #
-# ASTree version 1.02
+# ASTree version 1.03
 #
 
 from enum import Enum
@@ -165,7 +165,7 @@ class AssignStmtNode(StmtNode):
 class IfStmtNode(StmtNode):
 
     def __init__(self, condition: ExprNode, then_body: list[StmtNode],
-                 elifs: list[Optional[tuple[ExprNode, StmtNode]]], else_body: list[StmtNode]):
+                 elifs: list[Optional[tuple[ExprNode, list[StmtNode]]]], else_body: list[StmtNode]):
         self.condition = condition
         self.then_body = then_body
         self.elifs = elifs
