@@ -1,5 +1,5 @@
 from lexer import Lexer, Tokentype, SyntaxErrorException
-import ast
+import astree as ast
 
 class Parser:
     def __init__(self, f):
@@ -114,64 +114,82 @@ class Parser:
 
     # func_def ::= def ID ( [[typed var [[, typed var]]* ]]? ) [[-> type]]? : NEWLINE INDENT func_body DEDENT
     def func_def(self):
+        typed_var_nodes = []
         self.match(Tokentype.KwDef)
+
+        id_lexeme = self.token.lexeme
         self.match(Tokentype.Identifier)
+        id_node = ast.IdentifierNode(id_lexeme)
         self.match(Tokentype.ParenthesisL)
 
         # [[typed_var [[, typed_var]]* ]]?
         if self.token.type == Tokentype.Identifier:
-            self.typed_var()
+            typed_var_nodes.append(self.typed_var())
             while self.match_if(Tokentype.Comma):
-                self.typed_var()
+                typed_var_nodes.append(self.typed_var())
         
         self.match(Tokentype.ParenthesisR)
 
+        type_node = None
         # [[-> type]]?
         if self.match_if(Tokentype.Arrow):
-            self._type()
+            type_node = self._type()
 
         self.match(Tokentype.Colon)
         self.match(Tokentype.Newline)
         self.match(Tokentype.Indent)
-        self.func_body()
+        decl_nodes, stmt_nodes = self.func_body()
 
-        # NOTE: Should we have a newline match here?
         self.match(Tokentype.Dedent)
+
+        return ast.FuncDefNode(id_node, type_node, decl_nodes, stmt_nodes)
         
     # func_body requires a stmt at the end, bit weird??
     # func_body ::= [[global_decl | nonlocal_decl | var def | func def]]* stmt+
     def func_body(self):
+        decl_nodes = []
+        stmt_nodes = []
         while self.token.type in [Tokentype.KwGlobal, Tokentype.KwNonLocal, Tokentype.KwDef, Tokentype.Identifier]:
             if self.token.type == Tokentype.KwGlobal:
-                self.global_decl()
+                decl_nodes.append(self.global_decl())
             elif self.token.type == Tokentype.KwNonLocal:
-                self.nonlocal_decl()
+                decl_nodes.append(self.nonlocal_decl())
             elif self.token.type == Tokentype.KwDef:
-                self.func_def()
+                decl_nodes.append(self.func_def())
             # Identifier
             elif self.peek().type == Tokentype.Colon:
-                self.var_def()
+                decl_nodes.append(self.var_def())
             else:
                 break
 
         # need one or more statements
-        self.stmt()
+        stmt_nodes.append(self.stmt())
         while self.token.type != Tokentype.Dedent:
-            self.stmt()
+            stmt_nodes.append(self.stmt())
+
+        return decl_nodes, stmt_nodes
     
     # typed_var ::= ID : type
     def typed_var(self):
+        id_lexeme = self.token.type
         self.match(Tokentype.Identifier)
+        id_node = ast.IdentifierNode(id_lexeme)
+
         self.match(Tokentype.Colon)
-        self._type()
+        type_node = self._type()
+        return ast.TypedVarNode(id_node, type_node)
     
-    # type ::= ID | IDSTRING | [ type ]
+    # type ::= ID | STRING | [ type ]
     def _type(self):
         if self.match_if(Tokentype.BracketL):
-            self._type()
+            elem_type = self._type()
             self.match(Tokentype.BracketR)
-        elif not self.match_if(Tokentype.StringLiteral):
+            return ast.ListTypeAnnotationNod(elem_type)
+        elif self.match_if(Tokentype.StringLiteral):
+            return ast.ClassTypeAnnotationNode()
+        else:
             self.match(Tokentype.Identifier)
+            ...
 
     # global_decl ::= global ID NEWLINE
     def global_decl(self):
