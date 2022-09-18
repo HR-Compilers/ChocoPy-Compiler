@@ -17,3 +17,96 @@
 #          | ( expr )
 #          | literal
 #          | id_or_func
+# expr ::= or_expr [if expr else expr]
+# or_expr ::= and_expr {or and_expr}
+# and_expr ::= not_expr {and not_expr}
+# not_expr ::= not expr | cexpr
+
+# cexpr     -> aexpr [ rel_op aexpr ]
+# rel_op    -> == | != | ... | is
+# aexpr     -> mexpr { add_op mexpr }
+# add_op    -> + | - 
+# mexpr     -> nexpr { mul_op nexpr }
+# mul_op    -> * | // | %
+# nexpr -> - nexpr | mem_or_ind_expr
+# mem_or_ind_expr   -> fexpr { . id_or_func | '[' expr ']' }
+# id_or_func -> ID [ '(' [expr {, expr } ] ')' ]
+
+# fexpr -> [ [[expr {, expr}]]? ]
+#          | ( expr )
+#          | literal
+#          | id_or_func
+
+
+
+
+
+
+
+
+
+program ::= [[var def | func def | class def]]* stmt*
+
+class_def ::= class ID ( ID ) : NEWLINE INDENT class_body DEDENT
+
+class_body ::= pass NEWLINE | [[var_def | func_def]]+
+
+func_def ::= def ID ( [[typed var [[, typed var]]* ]]? ) [[-> type]]? : NEWLINE INDENT func_body DEDENT
+
+func_body ::= [[global_decl | nonlocal_decl | var def | func def]]* stmt+
+
+typed_var ::= ID : type
+
+type ::= ID | STRING | [ type ]
+
+global_decl ::= global ID NEWLINE
+
+nonlocal_decl ::= nonlocal ID NEWLINE
+
+var_def ::= typed_var = literal NEWLINE
+
+stmt ::= simple_stmt NEWLINE
+    | if expr : block [[elif expr : block]]* [[else : block]]?
+    | while expr : block
+    | for ID in expr : block
+
+____________________________________________________
+precedence:
+    # expr ::=  or_expr if expr else expr | or_expr
+    # or_expr ::= or_expr or and_expr | and_expr
+    # and_expr ::= and_expr and not_expr | not_expr
+    # not_expr ::= not expr | cexpr
+    #
+    # rewrite in EBNF to remove left-recursion:
+    # expr ::= or_expr [if expr else expr]
+____________________________________________________
+
+or_expr ::= and_expr {or and_expr}
+
+and_expr ::= not_expr {and not_expr}
+
+not_expr ::= not expr | cexpr
+
+cexpr     -> aexpr [ rel_op aexpr ]
+rel_op    -> == | != | ... | is
+
+aexpr     -> mexpr { add_op mexpr }
+add_op    -> + | -
+
+mexpr     -> nexpr { mul_op nexpr }
+mul_op    -> * | // | %
+
+nexpr -> - nexpr | mem_or_ind_expr
+
+mem_or_ind_expr   -> fexpr { . id_or_func | '[' expr ']' }
+
+id_or_func -> ID [ '(' [expr {, expr } ] ')' ]
+
+fexpr -> [ [[expr {, expr}]]? ]
+    | ( expr )
+    | literal
+    | id_or_func
+
+target ::= ID
+    | mem_expr
+    | index_expr
