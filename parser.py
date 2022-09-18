@@ -2,16 +2,19 @@ from lexer import Lexer, Tokentype, SyntaxErrorException
 import astree as ast
 
 class Parser:
+
     def __init__(self, f):
         self.lexer = Lexer(f)
         self.token = self.lexer.next()
         self.peek_token = None
     
+
     # for peek function, alter the match
     def peek(self):
         if self.peek_token is None:
             self.peek_token = self.lexer.next()
         return self.peek_token
+
 
     # Helper function.
     def match(self, type):
@@ -27,12 +30,14 @@ class Parser:
             )
             raise SyntaxErrorException(text, self.token.location)
 
+
     # Helper function
     def match_if(self, type):
         if self.token.type == type:
             self.match(type)
             return True
         return False
+
 
     # Finish implementing the parser.
     # The file should return an AST if parsing is successful, 
@@ -41,6 +46,7 @@ class Parser:
         node = self.program()
         self.match(Tokentype.EOI)
         return node
+
 
     # program ::= [[var def | func def | class def]]* stmt*
     def program(self):
@@ -63,6 +69,7 @@ class Parser:
             stmt_nodes.append(self.stmt())
 
         return ast.ProgramNode(decl_nodes, stmt_nodes)
+
 
     # class_def ::= class ID ( ID ) : NEWLINE INDENT class_body DEDENT
     def class_def(self):
@@ -89,6 +96,7 @@ class Parser:
 
         return ast.ClassDefNode(id_node, super_id_node, decl_nodes)
 
+
     # class_body ::= pass NEWLINE | [[var_def | func_def]]+
     def class_body(self):
         decl_nodes = []
@@ -111,6 +119,7 @@ class Parser:
                     decl_nodes.append(self.var_def())
         
         return decl_nodes
+
 
     # func_def ::= def ID ( [[typed var [[, typed var]]* ]]? ) [[-> type]]? : NEWLINE INDENT func_body DEDENT
     def func_def(self):
@@ -144,6 +153,7 @@ class Parser:
 
         return ast.FuncDefNode(id_node, type_node, decl_nodes, stmt_nodes)
         
+
     # func_body requires a stmt at the end, bit weird??
     # func_body ::= [[global_decl | nonlocal_decl | var def | func def]]* stmt+
     def func_body(self):
@@ -169,6 +179,7 @@ class Parser:
 
         return decl_nodes, stmt_nodes
     
+
     # typed_var ::= ID : type
     def typed_var(self):
         id_lexeme = self.token.type
@@ -178,37 +189,58 @@ class Parser:
         self.match(Tokentype.Colon)
         type_node = self._type()
         return ast.TypedVarNode(id_node, type_node)
-    
+
+
     # type ::= ID | STRING | [ type ]
     def _type(self):
         if self.match_if(Tokentype.BracketL):
             elem_type = self._type()
             self.match(Tokentype.BracketR)
-            return ast.ListTypeAnnotationNod(elem_type)
-        elif self.match_if(Tokentype.StringLiteral):
-            return ast.ClassTypeAnnotationNode()
+            return ast.ListTypeAnnotationNode(elem_type)
         else:
-            self.match(Tokentype.Identifier)
-            ...
+            lexeme = self.token.type
+            if self.match_if(Tokentype.StringLiteral):
+                return ast.ClassTypeAnnotationNode(lexeme)
+            else:
+                self.match(Tokentype.Identifier)
+                return ast.ClassTypeAnnotationNode(str(lexeme))
+
 
     # global_decl ::= global ID NEWLINE
     def global_decl(self):
         self.match(Tokentype.KwGlobal)
+
+        lexeme = self.token.type
         self.match(Tokentype.Identifier)
+        id_node = ast.IdentifierNode(lexeme)
+
         self.match(Tokentype.Newline)
+
+        return ast.GlobalDeclNode(id_node)
     
+
     # nonlocal_decl ::= nonlocal ID NEWLINE
     def nonlocal_decl(self):
         self.match(Tokentype.KwNonLocal)
+
+        lexeme = self.token.type
         self.match(Tokentype.Identifier)
+        id_node = ast.IdentifierNode(lexeme)
+
         self.match(Tokentype.Newline)
+
+        return ast.NonLocalDeclNode(id_node)
+
 
     # var_def ::= typed_var = literal NEWLINE
     def var_def(self):
-        self.typed_var()
+        typed_var_node = self.typed_var()
         self.match(Tokentype.OpAssign)
-        self.literal()
+        literal_expr_node = self.literal()
         self.match(Tokentype.Newline)
+
+        return ast.VarDefNode(typed_var_node, literal_expr_node)
+
 
     # stmt ::= simple_stmt NEWLINE
     # | if expr : block [[elif expr : block]]* [[else : block]]?
@@ -216,36 +248,50 @@ class Parser:
     # | for ID in expr : block
     def stmt(self):
         if self.match_if(Tokentype.KwIf):
-            self.expr()
+            elifs = []
+            else_body = None
+
+            cond_node = self.expr()
             self.match(Tokentype.Colon)
-            self.block()
+            then_body = self.block()
+
             while self.match_if(Tokentype.KwElif):
-                self.expr()
+                elif_expr = self.expr()
                 self.match(Tokentype.Colon)
-                self.block()
+                elif_body = self.block()
+                elifs.append((elif_expr, elif_body))
+
             if self.match_if(Tokentype.KwElse):
                 self.match(Tokentype.Colon)
-                self.block()
+                else_body = self.block()
+            
+            return ast.IfStmtNode(cond_node, then_body, elifs, else_body)
 
         elif self.match_if(Tokentype.KwWhile):
-            self.expr()
+            cond_node = self.expr()
             self.match(Tokentype.Colon)
-            self.block()
+            body = self.block()
+
+            return ast.WhileStmtNode(cond_node, body)
 
         elif self.match_if(Tokentype.KwFor):
+            id_lexeme = self.token.type
             self.match(Tokentype.Identifier)
+            id_node = ast.IdentifierNode(id_lexeme)
+
             self.match(Tokentype.OpIn)
-            self.expr()
+            iterable = self.expr()
             self.match(Tokentype.Colon)
-            self.block()
+            body = self.block()
+
+            return ast.ForStmtNode
 
         else:
-            self.simple_stmt()
+            simple_stmt_node = self.simple_stmt()
             self.match(Tokentype.Newline)
+            return simple_stmt_node
 
-    # with target: parse as expr, check if you see = after
-    # check to make sure that the expr matches target
-    # difficult!!
+
     def simple_stmt(self):
         if self.match_if(Tokentype.KwPass):
             return
@@ -265,6 +311,7 @@ class Parser:
             
             # otherwise it was just an expr and we are done
     
+
     def block(self):
         self.match(Tokentype.Newline)
         self.match(Tokentype.Indent)
