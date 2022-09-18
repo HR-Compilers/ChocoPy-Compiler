@@ -15,7 +15,7 @@ for filename in filtered_files:
     with open(filename) as f:
         print('\n' + filename)
         p = parser.Parser(f)
-        p.parse()
+        node = p.parse()
         pv = print_visitor.PrintVisitor()
-        pv.do_visit(a)
+        pv.do_visit(node)
         print("fully parsed file")

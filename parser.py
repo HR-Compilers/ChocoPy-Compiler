@@ -155,7 +155,7 @@ class Parser:
 
         return ast.FuncDefNode(id_node, typed_var_nodes, type_node, decl_nodes, stmt_nodes)
 
-    # func_body requires a stmt at the end, bit weird??
+    # func_body requires a stmt at the end, bit weird?
     # func_body ::= [[global_decl | nonlocal_decl | var def | func def]]* stmt+
 
     def func_body(self):
@@ -454,23 +454,31 @@ class Parser:
 
     # mem_or_ind_expr   -> fexpr { . id_or_func | '[' expr ']' }
     def mem_or_ind_expr(self):
-        self.fexpr()
+        node = self.fexpr()
         while self.token.type in [Tokentype.Period, Tokentype.BracketL]:
             if self.match_if(Tokentype.Period):
-                self.id_or_func()
+                id_node = self.id_or_func()
+                node = ast.MemberExprNode(node, id_node)
             else:
                 self.match(Tokentype.BracketL)
-                self.expr()
+                index_node = self.expr()
                 self.match(Tokentype.BracketR)
+                node = ast.IndexExprNode(node, index_node)
+        return node
 
     # id_or_func -> ID [ '(' [expr {, expr } ] ')' ]
     def id_or_func(self):
+        lexeme = self.token.type
         self.match(Tokentype.Identifier)
+        id_or_func_node = ast.IdentifierNode(lexeme)
         if self.match_if(Tokentype.ParenthesisL):
-            while not self.match_if(Tokentype.ParenthesisR):
-                self.expr()
+            args = []
+            if not self.match_if(Tokentype.ParenthesisR):
+                args.append(self.expr())
                 while self.match_if(Tokentype.Comma):
-                    self.expr()
+                    args.append(self.expr())
+            return ast.FunctionCallExprNode(id_or_func_node, args)
+        return ast.IdentifierExprNode(id_or_func_node)
 
     # fexpr -> [ [[expr {, expr}]]? ]
     #          | ( expr )
@@ -478,22 +486,27 @@ class Parser:
     #          | id_or_func
     def fexpr(self):
         if self.match_if(Tokentype.BracketL):
+            list_elems = []
             if not self.match_if(Tokentype.BracketR):
-                self.expr()
+                list_elems.append(self.expr())
                 while self.match_if(Tokentype.Comma):
-                    self.expr()
+                    list_elems.append(self.expr())
                 self.match(Tokentype.BracketR)
+            return ast.ListExprNode(list_elems)
         elif self.match_if(Tokentype.ParenthesisL):
             self.expr()
             self.match(Tokentype.ParenthesisR)
         elif self.token.type in [Tokentype.KwNone, Tokentype.BoolTrueLiteral, Tokentype.BoolFalseLiteral, Tokentype.IntegerLiteral, Tokentype.StringLiteral]:
-            self.literal()
+            return self.literal()
         else:
-            self.id_or_func()
+            return self.id_or_func()
 
     # target ::= ID
     #          | mem_expr
     #          | index_expr
     def target(self):
+        lexeme = self.token.type
         if not self.match_if(Tokentype.Identifier):
             self.mem_or_ind_expr()
+        else:
+            return ast.IdentifierNode(lexeme)
