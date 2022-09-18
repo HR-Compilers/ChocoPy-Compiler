@@ -1,22 +1,23 @@
 from lexer import Lexer, Tokentype, SyntaxErrorException
 import astree as ast
 
+
 class Parser:
 
     def __init__(self, f):
         self.lexer = Lexer(f)
         self.token = self.lexer.next()
         self.peek_token = None
-    
 
     # for peek function, alter the match
+
     def peek(self):
         if self.peek_token is None:
             self.peek_token = self.lexer.next()
         return self.peek_token
 
-
     # Helper function.
+
     def match(self, type):
         if self.token.type == type:
             if self.peek_token is None:
@@ -30,25 +31,25 @@ class Parser:
             )
             raise SyntaxErrorException(text, self.token.location)
 
-
     # Helper function
+
     def match_if(self, type):
         if self.token.type == type:
             self.match(type)
             return True
         return False
 
-
     # Finish implementing the parser.
-    # The file should return an AST if parsing is successful, 
+    # The file should return an AST if parsing is successful,
     # otherwise a syntax-error exception is thrown.
+
     def parse(self):
         node = self.program()
         self.match(Tokentype.EOI)
         return node
 
-
     # program ::= [[var def | func def | class def]]* stmt*
+
     def program(self):
         decl_nodes = []
         stmt_nodes = []
@@ -64,14 +65,14 @@ class Parser:
                     decl_nodes.append(self.var_def())
                 else:
                     break
-        
+
         while self.token.type != Tokentype.EOI:
             stmt_nodes.append(self.stmt())
 
         return ast.ProgramNode(decl_nodes, stmt_nodes)
 
-
     # class_def ::= class ID ( ID ) : NEWLINE INDENT class_body DEDENT
+
     def class_def(self):
         self.match(Tokentype.KwClass)
 
@@ -89,15 +90,15 @@ class Parser:
         self.match(Tokentype.Colon)
         self.match(Tokentype.Newline)
         self.match(Tokentype.Indent)
-        
+
         decl_nodes = self.class_body()
 
         self.match(Tokentype.Dedent)
 
         return ast.ClassDefNode(id_node, super_id_node, decl_nodes)
 
-
     # class_body ::= pass NEWLINE | [[var_def | func_def]]+
+
     def class_body(self):
         decl_nodes = []
 
@@ -110,18 +111,18 @@ class Parser:
                 decl_nodes.append(self.func_def())
             else:
                 decl_nodes.append(self.var_def())
-            
+
             # now we can have zero or more of those
             while self.token.type in [Tokentype.KwDef, Tokentype.Identifier]:
                 if self.token.type == Tokentype.KwDef:
                     decl_nodes.append(self.func_def())
                 else:
                     decl_nodes.append(self.var_def())
-        
+
         return decl_nodes
 
-
     # func_def ::= def ID ( [[typed var [[, typed var]]* ]]? ) [[-> type]]? : NEWLINE INDENT func_body DEDENT
+
     def func_def(self):
         typed_var_nodes = []
         self.match(Tokentype.KwDef)
@@ -136,7 +137,7 @@ class Parser:
             typed_var_nodes.append(self.typed_var())
             while self.match_if(Tokentype.Comma):
                 typed_var_nodes.append(self.typed_var())
-        
+
         self.match(Tokentype.ParenthesisR)
 
         type_node = None
@@ -152,10 +153,10 @@ class Parser:
         self.match(Tokentype.Dedent)
 
         return ast.FuncDefNode(id_node, type_node, decl_nodes, stmt_nodes)
-        
 
     # func_body requires a stmt at the end, bit weird??
     # func_body ::= [[global_decl | nonlocal_decl | var def | func def]]* stmt+
+
     def func_body(self):
         decl_nodes = []
         stmt_nodes = []
@@ -178,9 +179,9 @@ class Parser:
             stmt_nodes.append(self.stmt())
 
         return decl_nodes, stmt_nodes
-    
 
     # typed_var ::= ID : type
+
     def typed_var(self):
         id_lexeme = self.token.type
         self.match(Tokentype.Identifier)
@@ -190,8 +191,8 @@ class Parser:
         type_node = self._type()
         return ast.TypedVarNode(id_node, type_node)
 
-
     # type ::= ID | STRING | [ type ]
+
     def _type(self):
         if self.match_if(Tokentype.BracketL):
             elem_type = self._type()
@@ -205,8 +206,8 @@ class Parser:
                 self.match(Tokentype.Identifier)
                 return ast.ClassTypeAnnotationNode(str(lexeme))
 
-
     # global_decl ::= global ID NEWLINE
+
     def global_decl(self):
         self.match(Tokentype.KwGlobal)
 
@@ -217,9 +218,9 @@ class Parser:
         self.match(Tokentype.Newline)
 
         return ast.GlobalDeclNode(id_node)
-    
 
     # nonlocal_decl ::= nonlocal ID NEWLINE
+
     def nonlocal_decl(self):
         self.match(Tokentype.KwNonLocal)
 
@@ -231,8 +232,8 @@ class Parser:
 
         return ast.NonLocalDeclNode(id_node)
 
-
     # var_def ::= typed_var = literal NEWLINE
+
     def var_def(self):
         typed_var_node = self.typed_var()
         self.match(Tokentype.OpAssign)
@@ -241,11 +242,11 @@ class Parser:
 
         return ast.VarDefNode(typed_var_node, literal_expr_node)
 
-
     # stmt ::= simple_stmt NEWLINE
     # | if expr : block [[elif expr : block]]* [[else : block]]?
     # | while expr : block
     # | for ID in expr : block
+
     def stmt(self):
         if self.match_if(Tokentype.KwIf):
             elifs = []
@@ -264,7 +265,7 @@ class Parser:
             if self.match_if(Tokentype.KwElse):
                 self.match(Tokentype.Colon)
                 else_body = self.block()
-            
+
             return ast.IfStmtNode(cond_node, then_body, elifs, else_body)
 
         elif self.match_if(Tokentype.KwWhile):
@@ -291,45 +292,57 @@ class Parser:
             self.match(Tokentype.Newline)
             return simple_stmt_node
 
-
     def simple_stmt(self):
         if self.match_if(Tokentype.KwPass):
-            return
+            return ast.PassStmtNode()
+
         elif self.match_if(Tokentype.KwReturn):
+            expr_node = None
             if self.token.type != Tokentype.Newline:
-                self.expr()
+                expr_node = self.expr()
+            return ast.ReturnStmtNode(expr_node)
         # now its either target or expr, so we match on expr
         else:
-            self.expr()
+            expr_or_target_node = self.expr()
+
             # if the next token is an equals sign, it was actually a target
             # fix with node by AST: ID, member_expr, index_expr
             if self.match_if(Tokentype.OpAssign):
                 # TODO
-                self.expr()
+                targets = []
+                targets.append(expr_or_target_node)
+
+                prev = self.expr()
                 while self.match_if(Tokentype.OpAssign):
-                    self.expr()
-            
-            # otherwise it was just an expr and we are done
-    
+                    targets.append(prev)
+                    prev = self.expr()
+                expr_node = prev
+
+                return ast.AssignStmtNode(targets, expr_node)
+            else:
+                # otherwise it was just an expr and we are done
+                return ast.ExprStmt(expr_or_target_node)
 
     def block(self):
         self.match(Tokentype.Newline)
         self.match(Tokentype.Indent)
-        self.stmt()
+        stmts = []
+        stmts.append(self.stmt())
         while not self.match_if(Tokentype.Dedent):
-            self.stmt()
-    
+            stmts.append(self.stmt())
+        return stmts
+
     def literal(self):
+        lexeme = self.token.type
         if self.match_if(Tokentype.KwNone):
-            return
-        elif self.match_if(Tokentype.BoolTrueLiteral):
-            return
-        elif self.match_if(Tokentype.BoolFalseLiteral):
-            return
+            return ast.NoneLiteralExprNode
+        elif self.match_if(Tokentype.BoolTrueLiteral) or self.match_if(Tokentype.BoolFalseLiteral):
+            return ast.BooleanLiteralExprNode(lexeme)
         elif self.match_if(Tokentype.IntegerLiteral):
-            return
+            return ast.IntegerLiteralExprNode(lexeme)
         else:
             self.match(Tokentype.StringLiteral)
+            return ast.StringLiteralExprNode(lexeme)
 
     # precedence:
     # expr ::=  or_expr if expr else expr | or_expr
@@ -339,7 +352,7 @@ class Parser:
     #
     # rewrite in EBNF to remove left-recursion:
     # expr ::= or_expr [if expr else expr]
-    def expr(self):        
+    def expr(self):
         self.or_expr()
         if self.match_if(Tokentype.KwIf):
             self.expr()
@@ -361,12 +374,12 @@ class Parser:
     # not_expr ::= not expr | cexpr
     def not_expr(self):
         if self.match_if(Tokentype.OpNot):
-            # NOTE: Yngvi-sama in his code wrote "not expr", we think it is incorrect, 
-            # and changed it with "expr" 
+            # NOTE: Yngvi-sama in his code wrote "not expr", we think it is incorrect,
+            # and changed it with "expr"
             self.expr()
         else:
             self.cexpr()
-            
+
     # cexpr     -> aexpr [ rel_op aexpr ]
     # rel_op    -> == | != | ... | is
     def cexpr(self):
@@ -387,12 +400,12 @@ class Parser:
             self.aexpr()
 
     # aexpr     -> mexpr { add_op mexpr }
-    # add_op    -> + | -  
+    # add_op    -> + | -
     def aexpr(self):
         self.mexpr()
         while self.match_if(Tokentype.OpPlus) or self.match_if(Tokentype.OpMinus):
             self.mexpr()
-    
+
     # mexpr     -> nexpr { mul_op nexpr }
     # mul_op    -> * | // | %
     def mexpr(self):
@@ -406,7 +419,7 @@ class Parser:
             self.nexpr()
         else:
             self.mem_or_ind_expr()
-    
+
     # mem_or_ind_expr   -> fexpr { . id_or_func | '[' expr ']' }
     def mem_or_ind_expr(self):
         self.fexpr()
@@ -441,12 +454,11 @@ class Parser:
         elif self.match_if(Tokentype.ParenthesisL):
             self.expr()
             self.match(Tokentype.ParenthesisR)
-        elif self.token.type in [Tokentype.KwNone, Tokentype.BoolTrueLiteral, Tokentype.BoolFalseLiteral\
-                                ,Tokentype.IntegerLiteral, Tokentype.StringLiteral]:
+        elif self.token.type in [Tokentype.KwNone, Tokentype.BoolTrueLiteral, Tokentype.BoolFalseLiteral, Tokentype.IntegerLiteral, Tokentype.StringLiteral]:
             self.literal()
         else:
             self.id_or_func()
-    
+
     # target ::= ID
     #          | mem_expr
     #          | index_expr
