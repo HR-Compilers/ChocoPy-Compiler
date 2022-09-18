@@ -1,3 +1,4 @@
+from lib2to3.pgen2.grammar import opmap
 from lexer import Lexer, Tokentype, SyntaxErrorException
 import astree as ast
 
@@ -124,7 +125,6 @@ class Parser:
     # func_def ::= def ID ( [[typed var [[, typed var]]* ]]? ) [[-> type]]? : NEWLINE INDENT func_body DEDENT
 
     def func_def(self):
-        typed_var_nodes = []
         self.match(Tokentype.KwDef)
 
         id_lexeme = self.token.lexeme
@@ -133,6 +133,7 @@ class Parser:
         self.match(Tokentype.ParenthesisL)
 
         # [[typed_var [[, typed_var]]* ]]?
+        typed_var_nodes = []
         if self.token.type == Tokentype.Identifier:
             typed_var_nodes.append(self.typed_var())
             while self.match_if(Tokentype.Comma):
@@ -152,7 +153,7 @@ class Parser:
 
         self.match(Tokentype.Dedent)
 
-        return ast.FuncDefNode(id_node, type_node, decl_nodes, stmt_nodes)
+        return ast.FuncDefNode(id_node, typed_var_nodes, type_node, decl_nodes, stmt_nodes)
 
     # func_body requires a stmt at the end, bit weird??
     # func_body ::= [[global_decl | nonlocal_decl | var def | func def]]* stmt+
@@ -183,7 +184,7 @@ class Parser:
     # typed_var ::= ID : type
 
     def typed_var(self):
-        id_lexeme = self.token.type
+        id_lexeme = self.token.lexeme
         self.match(Tokentype.Identifier)
         id_node = ast.IdentifierNode(id_lexeme)
 
@@ -199,7 +200,7 @@ class Parser:
             self.match(Tokentype.BracketR)
             return ast.ListTypeAnnotationNode(elem_type)
         else:
-            lexeme = self.token.type
+            lexeme = self.token.lexeme
             if self.match_if(Tokentype.StringLiteral):
                 return ast.ClassTypeAnnotationNode(lexeme)
             else:
@@ -211,7 +212,7 @@ class Parser:
     def global_decl(self):
         self.match(Tokentype.KwGlobal)
 
-        lexeme = self.token.type
+        lexeme = self.token.lexeme
         self.match(Tokentype.Identifier)
         id_node = ast.IdentifierNode(lexeme)
 
@@ -224,7 +225,7 @@ class Parser:
     def nonlocal_decl(self):
         self.match(Tokentype.KwNonLocal)
 
-        lexeme = self.token.type
+        lexeme = self.token.lexeme
         self.match(Tokentype.Identifier)
         id_node = ast.IdentifierNode(lexeme)
 
@@ -276,7 +277,7 @@ class Parser:
             return ast.WhileStmtNode(cond_node, body)
 
         elif self.match_if(Tokentype.KwFor):
-            id_lexeme = self.token.type
+            id_lexeme = self.token.lexeme
             self.match(Tokentype.Identifier)
             id_node = ast.IdentifierNode(id_lexeme)
 
@@ -333,7 +334,7 @@ class Parser:
         return stmts
 
     def literal(self):
-        lexeme = self.token.type
+        lexeme = self.token.lexeme
         if self.match_if(Tokentype.KwNone):
             return ast.NoneLiteralExprNode
         elif self.match_if(Tokentype.BoolTrueLiteral) or self.match_if(Tokentype.BoolFalseLiteral):
@@ -352,73 +353,104 @@ class Parser:
     #
     # rewrite in EBNF to remove left-recursion:
     # expr ::= or_expr [if expr else expr]
+
     def expr(self):
-        self.or_expr()
+        then_node = self.or_expr() # for if else... its the then node, else just the or node
         if self.match_if(Tokentype.KwIf):
-            self.expr()
+            cond_node = self.expr()
             self.match(Tokentype.KwElse)
-            self.expr()
+            else_node = self.expr()
+            return ast.IfExprNode(cond_node, then_node, else_node)
+        else:
+            return then_node
 
     # or_expr ::= and_expr {or and_expr}
     def or_expr(self):
-        self.and_expr()
+        node = self.and_expr()
         while self.match_if(Tokentype.OpOr):
-            self.and_expr()
+            rhs = self.and_expr()
+            node = ast.BinaryOpExprNode(ast.Operator.Or, node, rhs)
+        return node
 
     # and_expr ::= not_expr {and not_expr}
     def and_expr(self):
-        self.not_expr()
+        node = self.not_expr()
         while self.match_if(Tokentype.OpAnd):
-            self.not_expr()
+            rhs = self.not_expr()
+            node = ast.BinaryOpExprNode(ast.Operator.And, node, rhs)
+        return node
 
     # not_expr ::= not expr | cexpr
     def not_expr(self):
         if self.match_if(Tokentype.OpNot):
-            # NOTE: Yngvi-sama in his code wrote "not expr", we think it is incorrect,
+            # NOTE: in lab code we wrote "not expr", we think it is incorrect,
             # and changed it with "expr"
-            self.expr()
+            expr_node = self.expr()
+            return ast.UnaryOpExprNode(ast.Operator.Not, expr_node)
         else:
-            self.cexpr()
+            return self.cexpr()
 
     # cexpr     -> aexpr [ rel_op aexpr ]
     # rel_op    -> == | != | ... | is
     def cexpr(self):
-        self.aexpr()
-        if self.match_if(Tokentype.OpEq):
-            self.aexpr()
-        elif self.match_if(Tokentype.OpNotEq):
-            self.aexpr()
-        elif self.match_if(Tokentype.OpGt):
-            self.aexpr()
-        elif self.match_if(Tokentype.OpGtEq):
-            self.aexpr()
-        elif self.match_if(Tokentype.OpLt):
-            self.aexpr()
-        elif self.match_if(Tokentype.OpLtEq):
-            self.aexpr()
-        elif self.match_if(Tokentype.OpIs):
-            self.aexpr()
+        lhs_node = self.aexpr()
+        opmap = {
+            Tokentype.OpEq: ast.Operator.Eq,
+            Tokentype.OpNotEq: ast.Operator.NotEq,
+            Tokentype.OpGt: ast.Operator.Gt,
+            Tokentype.OpGtEq: ast.Operator.GtEq,
+            Tokentype.OpLt: ast.Operator.Lt,
+            Tokentype.OpLtEq: ast.Operator.LtEq,
+            Tokentype.OpIs: ast.Operator.Is,
+        }
+        if self.token.type in opmap.keys():
+            op = opmap[self.token.type]
+            self.match(self.token.type)
+            rhs_node = self.aexpr()
+            return ast.BinaryOpExprNode(op, lhs_node, rhs_node)
+        else:
+            return lhs_node
 
     # aexpr     -> mexpr { add_op mexpr }
     # add_op    -> + | -
     def aexpr(self):
-        self.mexpr()
-        while self.match_if(Tokentype.OpPlus) or self.match_if(Tokentype.OpMinus):
-            self.mexpr()
+        node = self.mexpr()
+        opmap = {
+            Tokentype.OpPlus: ast.Operator.Plus,
+            Tokentype.OpMinus: ast.Operator.Minus
+        }
+        while self.token.type in opmap.keys():
+            op = opmap[self.token.type]
+            self.match(self.token.type)
+            rhs_node = self.mexpr()
+            node = ast.BinaryOpExprNode(op, node, rhs_node)
+
+        return node
 
     # mexpr     -> nexpr { mul_op nexpr }
     # mul_op    -> * | // | %
     def mexpr(self):
-        self.nexpr()
-        while self.match_if(Tokentype.OpMultiply) or self.match_if(Tokentype.OpIntDivide) or self.match_if(Tokentype.OpModulus):
-            self.nexpr()
+        node = self.nexpr()
+        opmap = {
+            Tokentype.OpMultiply: ast.Operator.Mult,
+            Tokentype.OpIntDivide: ast.Operator.IntDivide,
+            Tokentype.OpModulus: ast.Operator.Modulus
+        }
+        while self.token.type in opmap.keys():
+            op = opmap[self.token.type]
+            self.match(self.token.type)
+            rhs_node = self.nexpr()
+            node = ast.BinaryOpExprNode(op, node, rhs_node)
+
+        return node
 
     # nexpr -> - nexpr | mem_or_ind_expr
     def nexpr(self):
         if self.match_if(Tokentype.OpMinus):
-            self.nexpr()
+            expr_node = self.nexpr()
+            return ast.UnaryOpExprNode(ast.Operator.Minus, expr_node)
         else:
-            self.mem_or_ind_expr()
+            return self.mem_or_ind_expr()
 
     # mem_or_ind_expr   -> fexpr { . id_or_func | '[' expr ']' }
     def mem_or_ind_expr(self):
