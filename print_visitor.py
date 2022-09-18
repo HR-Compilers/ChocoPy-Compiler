@@ -1,5 +1,5 @@
 #
-# PrintVisitor version 1.00
+# PrintVisitor version 1.01
 #
 import functools
 import astree as ast
@@ -8,17 +8,29 @@ import visitor
 
 class PrintVisitor(visitor.Visitor):
 
-    def __init__(self):
+    def __init__(self, do_print = True):
         self.indent = 0
+        self.do_print = do_print
+        self.lines = []
+
+    def clear(self):
+        self.lines = []
 
     def do_visit(self, node):
         if node:
             self.visit(node)
 
     def print(self, text):
+        line = []
         for _ in range(self.indent):
-            print('   ', sep='', end='')
-        print(text)
+            line.append(' ')
+        line.append(text)
+        output = "".join(line)
+        if self.do_print:
+            print(output)
+        else:
+            self.lines.append(output)
+
 
     @functools.singledispatchmethod
     def visit(self, node):
@@ -35,7 +47,7 @@ class PrintVisitor(visitor.Visitor):
 
     @visit.register
     def _(self, node: ast.StringLiteralExprNode):
-        self.print(f'(String "{node.value})"')
+        self.print(f'(String "{node.value}")')
 
     @visit.register
     def _(self, node: ast.IntegerLiteralExprNode):
@@ -158,6 +170,11 @@ class PrintVisitor(visitor.Visitor):
         self.print('then')
         for s in node.then_body:
             self.do_visit(s)
+        for e in node.elifs:
+            self.print('elif')
+            self.do_visit(e[0])
+            for s in e[1]:
+                self.do_visit(s)
         self.print('else')
         for s in node.else_body:
             self.do_visit(s)
