@@ -3,6 +3,7 @@ from os.path import isfile, join
 
 import parser as parser
 import lexer as lexer
+import print_visitor
 
 # We took all the test files from the github repository of ChocoPy
 # Here we iterate over them and parse each of them as test
@@ -15,4 +16,6 @@ for filename in filtered_files:
         print('\n' + filename)
         p = parser.Parser(f)
         p.parse()
+        pv = print_visitor.PrintVisitor()
+        pv.do_visit(a)
         print("fully parsed file")
