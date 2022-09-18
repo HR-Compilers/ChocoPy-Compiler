@@ -286,7 +286,7 @@ class Parser:
             self.match(Tokentype.Colon)
             body = self.block()
 
-            return ast.ForStmtNode
+            return ast.ForStmtNode(id_node, iterable, body)
 
         else:
             simple_stmt_node = self.simple_stmt()
@@ -336,7 +336,7 @@ class Parser:
     def literal(self):
         lexeme = self.token.lexeme
         if self.match_if(Tokentype.KwNone):
-            return ast.NoneLiteralExprNode
+            return ast.NoneLiteralExprNode()
         elif self.match_if(Tokentype.BoolTrueLiteral) or self.match_if(Tokentype.BoolFalseLiteral):
             return ast.BooleanLiteralExprNode(lexeme)
         elif self.match_if(Tokentype.IntegerLiteral):
