@@ -38,26 +38,31 @@ class Parser:
     # The file should return an AST if parsing is successful, 
     # otherwise a syntax-error exception is thrown.
     def parse(self):
-        self.program()
+        node = self.program()
         self.match(Tokentype.EOI)
+        return node
 
     # program ::= [[var def | func def | class def]]* stmt*
     def program(self):
-        # we need one more lookahead for var_def as stmt can start with ID as well
-        # we need to peek if the next token is a colon
+        declarations= []
+        statements = []
         while self.token.type in [Tokentype.KwDef, Tokentype.KwClass, Tokentype.Identifier]:
             if self.token.type == Tokentype.KwClass:
-                self.class_def()
+                decl_node = self.class_def()
             elif self.token.type == Tokentype.KwDef:
-                self.func_def()
+                decl_node = self.func_def()   
+            # we need one more lookahead for var_def as stmt can start with ID as well
+            # we need to peek if the next token is a colon
             else:
                 if self.peek().type == Tokentype.Colon:
-                    self.var_def()
+                    decl_node = self.var_def()
                 else:
                     break
+            declarations.append(decl_node)
         
         while self.token.type != Tokentype.EOI:
-            self.stmt()
+            stmt_node = self.stmt()
+            statements.append(stmt_node)
 
     # class_def ::= class ID ( ID ) : NEWLINE INDENT class_body DEDENT
     def class_def(self):

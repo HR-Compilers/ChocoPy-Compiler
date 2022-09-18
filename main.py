@@ -5,8 +5,7 @@ import parser as parser
 import lexer as lexer
 
 # We took all the test files from the github repository of ChocoPy
-# Here we iterate over them and parse each of them
-
+# Here we iterate over them and parse each of them as test
 mypath = "tests/"
 files = [f for f in listdir(mypath) if isfile(join(mypath, f))]
 filtered_files = ["tests/" + element for element in files if element.endswith('.py') and not element.startswith('bad')]
