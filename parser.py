@@ -477,7 +477,7 @@ class Parser:
                 args.append(self.expr())
                 while self.match_if(Tokentype.Comma):
                     args.append(self.expr())
-            self.match(Tokentype.ParenthesisR)
+                self.match(Tokentype.ParenthesisR)
             return ast.FunctionCallExprNode(id_or_func_node, args)
         else:
             return ast.IdentifierExprNode(id_or_func_node)
