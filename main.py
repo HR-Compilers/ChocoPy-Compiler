@@ -13,12 +13,12 @@ files = [f for f in listdir(mypath) if isfile(join(mypath, f))]
 filtered_files = ["tests/" + element for element in files if element.endswith('.py') and not element.startswith('bad')]
 filtered_files.sort()
 
-for filename in filtered_files:
-# filename = "tests/coverage.py"
-    with open(filename) as f:
-        print('\n' + filename)
-        p = parser.Parser(f)
-        node = p.parse()
-        pv = print_visitor.PrintVisitor()
-        pv.do_visit(node)
-        print("fully parsed file")
+# for filename in filtered_files:
+filename = "tests/chained_mixed_assignments.py"
+with open(filename) as f:
+    print('\n' + filename)
+    p = parser.Parser(f)
+    node = p.parse()
+    pv = print_visitor.PrintVisitor()
+    pv.do_visit(node)
+    print("fully parsed file")

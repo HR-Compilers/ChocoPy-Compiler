@@ -32,3 +32,4 @@ class bar(object):
                 return self is None
 
         return "Nope"
+print(bar().baz([1,2]))

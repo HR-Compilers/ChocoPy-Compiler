@@ -1,4 +1,3 @@
-from lib2to3.pgen2.grammar import opmap
 from lexer import Lexer, Tokentype, SyntaxErrorException
 import astree as ast
 
@@ -307,14 +306,26 @@ class Parser:
             expr_or_target_node = self.expr()
 
             # if the next token is an equals sign, it was actually a target
-            # fix with node by AST: ID, member_expr, index_expr
+            # fix with AST: target may only be ID, member_expr, index_expr
             if self.match_if(Tokentype.OpAssign):
                 # TODO
+                # check if prev node was ID, member_expr or index_expr
+                if not (isinstance(expr_or_target_node, ast.IdentifierNode)\
+                    or isinstance(expr_or_target_node, ast.IdentifierExprNode)\
+                    or isinstance(expr_or_target_node, ast.IndexExprNode)\
+                    or isinstance(expr_or_target_node, ast.MemberExprNode)):
+                    raise SyntaxErrorException("Invalid target", self.token.location)
+
                 targets = []
                 targets.append(expr_or_target_node)
 
                 prev = self.expr()
                 while self.match_if(Tokentype.OpAssign):
+                    if not (isinstance(expr_or_target_node, ast.IdentifierNode)\
+                     or isinstance(expr_or_target_node, ast.IdentifierExprNode)\
+                     or isinstance(expr_or_target_node, ast.IndexExprNode)\
+                     or isinstance(expr_or_target_node, ast.MemberExprNode)):
+                        raise SyntaxErrorException("Invalid target", self.token.location)
                     targets.append(prev)
                     prev = self.expr()
                 expr_node = prev
@@ -457,14 +468,34 @@ class Parser:
         node = self.fexpr()
         while self.token.type in [Tokentype.Period, Tokentype.BracketL]:
             if self.match_if(Tokentype.Period):
-                id_node = self.id_or_func(as_identifier=True)
-                node = ast.MemberExprNode(node, id_node)
+                id_node, args = self.member_id_or_func()
+                if args is None:
+                    node = ast.MemberExprNode(node, id_node)
+                else:
+                    mem_expr_node = ast.MemberExprNode(node, id_node)
+                    node = ast.MethodCallExprNode(mem_expr_node, args)
             else:
                 self.match(Tokentype.BracketL)
                 index_node = self.expr()
                 self.match(Tokentype.BracketR)
                 node = ast.IndexExprNode(node, index_node)
         return node
+
+    def member_id_or_func(self):
+        lexeme = self.token.lexeme
+        self.match(Tokentype.Identifier)
+        id_or_func_node = ast.IdentifierNode(lexeme)
+        args = None
+        if self.match_if(Tokentype.ParenthesisL):
+            args = []
+            if not self.match_if(Tokentype.ParenthesisR):
+                args.append(self.expr())
+                while self.match_if(Tokentype.Comma):
+                    args.append(self.expr())
+                self.match(Tokentype.ParenthesisR)
+            return id_or_func_node, args
+        else:
+            return id_or_func_node, args
 
     # id_or_func -> ID [ '(' [expr {, expr } ] ')' ]
     def id_or_func(self, as_identifier=False):
