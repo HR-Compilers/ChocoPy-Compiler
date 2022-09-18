@@ -44,56 +44,73 @@ class Parser:
 
     # program ::= [[var def | func def | class def]]* stmt*
     def program(self):
-        declarations= []
-        statements = []
+        decl_nodes = []
+        stmt_nodes = []
         while self.token.type in [Tokentype.KwDef, Tokentype.KwClass, Tokentype.Identifier]:
             if self.token.type == Tokentype.KwClass:
-                decl_node = self.class_def()
+                decl_nodes.append(self.class_def())
             elif self.token.type == Tokentype.KwDef:
-                decl_node = self.func_def()   
+                decl_nodes.append(self.func_def())
             # we need one more lookahead for var_def as stmt can start with ID as well
             # we need to peek if the next token is a colon
             else:
                 if self.peek().type == Tokentype.Colon:
-                    decl_node = self.var_def()
+                    decl_nodes.append(self.var_def())
                 else:
                     break
-            declarations.append(decl_node)
         
         while self.token.type != Tokentype.EOI:
-            stmt_node = self.stmt()
-            statements.append(stmt_node)
+            stmt_nodes.append(self.stmt())
+
+        return ast.ProgramNode(decl_nodes, stmt_nodes)
 
     # class_def ::= class ID ( ID ) : NEWLINE INDENT class_body DEDENT
     def class_def(self):
         self.match(Tokentype.KwClass)
+
+        id_lexeme = self.token.lexeme
         self.match(Tokentype.Identifier)
+        id_node = ast.IdentifierNode(id_lexeme)
+
         self.match(Tokentype.ParenthesisL)
+
+        super_id_lexeme = self.token.lexeme
         self.match(Tokentype.Identifier)
+        super_id_node = ast.IdentifierNode(super_id_lexeme)
+
         self.match(Tokentype.ParenthesisR)
         self.match(Tokentype.Colon)
         self.match(Tokentype.Newline)
         self.match(Tokentype.Indent)
-        self.class_body()
+        
+        decl_nodes = self.class_body()
+
         self.match(Tokentype.Dedent)
+
+        return ast.ClassDefNode(id_node, super_id_node, decl_nodes)
 
     # class_body ::= pass NEWLINE | [[var_def | func_def]]+
     def class_body(self):
+        decl_nodes = []
+
         if self.match_if(Tokentype.KwPass):
             self.match(Tokentype.Newline)
+            return decl_nodes
         else:
             # we must have at least one var_def or func_def
             if self.token.type == Tokentype.KwDef:
-                self.func_def()
+                decl_nodes.append(self.func_def())
             else:
-                self.var_def()
+                decl_nodes.append(self.var_def())
             
             # now we can have zero or more of those
             while self.token.type in [Tokentype.KwDef, Tokentype.Identifier]:
                 if self.token.type == Tokentype.KwDef:
-                    self.func_def()
+                    decl_nodes.append(self.func_def())
                 else:
-                    self.var_def()
+                    decl_nodes.append(self.var_def())
+        
+        return decl_nodes
 
     # func_def ::= def ID ( [[typed var [[, typed var]]* ]]? ) [[-> type]]? : NEWLINE INDENT func_body DEDENT
     def func_def(self):
