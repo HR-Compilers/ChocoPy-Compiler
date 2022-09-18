@@ -468,7 +468,7 @@ class Parser:
 
     # id_or_func -> ID [ '(' [expr {, expr } ] ')' ]
     def id_or_func(self):
-        lexeme = self.token.type
+        lexeme = self.token.lexeme
         self.match(Tokentype.Identifier)
         id_or_func_node = ast.IdentifierNode(lexeme)
         if self.match_if(Tokentype.ParenthesisL):
@@ -477,8 +477,10 @@ class Parser:
                 args.append(self.expr())
                 while self.match_if(Tokentype.Comma):
                     args.append(self.expr())
+            self.match(Tokentype.ParenthesisR)
             return ast.FunctionCallExprNode(id_or_func_node, args)
-        return ast.IdentifierExprNode(id_or_func_node)
+        else:
+            return ast.IdentifierExprNode(id_or_func_node)
 
     # fexpr -> [ [[expr {, expr}]]? ]
     #          | ( expr )
@@ -494,8 +496,9 @@ class Parser:
                 self.match(Tokentype.BracketR)
             return ast.ListExprNode(list_elems)
         elif self.match_if(Tokentype.ParenthesisL):
-            self.expr()
+            node = self.expr()
             self.match(Tokentype.ParenthesisR)
+            return node
         elif self.token.type in [Tokentype.KwNone, Tokentype.BoolTrueLiteral, Tokentype.BoolFalseLiteral, Tokentype.IntegerLiteral, Tokentype.StringLiteral]:
             return self.literal()
         else:
@@ -505,8 +508,8 @@ class Parser:
     #          | mem_expr
     #          | index_expr
     def target(self):
-        lexeme = self.token.type
+        lexeme = self.token.lexeme
         if not self.match_if(Tokentype.Identifier):
-            self.mem_or_ind_expr()
+            return self.mem_or_ind_expr()
         else:
             return ast.IdentifierNode(lexeme)
