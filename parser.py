@@ -15,7 +15,6 @@ class Parser:
 
     # Helper function.
     def match(self, type):
-        print(self.token.type)
         if self.token.type == type:
             if self.peek_token is None:
                 self.token = self.lexer.next()
@@ -221,6 +220,8 @@ class Parser:
             if self.match_if(Tokentype.OpAssign):
                 # TODO
                 self.expr()
+                while self.match_if(Tokentype.OpAssign):
+                    self.expr()
             
             # otherwise it was just an expr and we are done
     
