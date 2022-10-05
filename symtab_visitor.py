@@ -7,8 +7,6 @@
 #
 
 import functools
-from lib2to3.pygram import Symbols
-import symbol
 import astree as ast
 import visitor
 import symbol_table
@@ -88,6 +86,9 @@ class SymbolTableVisitor(visitor.Visitor):
     @visit.register
     def _(self, node: ast.FunctionCallExprNode):
         self.do_visit(node.identifier)
+        # TODO: check what type the function returns by finding the identifier
+        # syms = 
+
         for a in node.args:
             self.do_visit(a)
 
@@ -159,30 +160,46 @@ class SymbolTableVisitor(visitor.Visitor):
         self.do_visit(node.var)
         self.do_visit(node.value)
 
+        global_flag = Symbol.Is.Global if self.curr_sym_table == self.root_sym_table else 0
+        s = Symbol(node.var.identifier.name, global_flag + Symbol.Is.Local, str(node.var.id_type))
+        self.curr_sym_table.add_symbol(s)
+
     @visit.register
     def _(self, node: ast.GlobalDeclNode):
         self.do_visit(node.variable)
+        # Find the corresponding variable in the global scope
+        syms = self.root_sym_table.get_symbols()
+        type_str = ""
+        for sym in syms:
+            if sym.get_name() == node.variable.name:
+                type_str = sym.get_type_str()
+        
+        s = Symbol(node.variable.name, Symbol.Is.Global, type_str=type_str)
+        self.curr_sym_table.add_symbol(s)
 
+    # nonlocal can only be used inside nested functions!
     @visit.register
     def _(self, node: ast.NonLocalDeclNode):
         self.do_visit(node.variable)
+        if not self.curr_sym_table.is_nested():
+            raise semantic_error.DeclarationException(node.variable.name, self.curr_sym_table.get_name())
 
         # Find the corresponding variable in the parent scope
         syms = self.parent_sym_table.get_symbols()
+        type_str = ""
         for sym in syms:
             if sym.get_name() == node.variable.name:
                 type_str = sym.get_type_str()
 
         # If the parent is the module, the variable is global
-        if self.parent_sym_table.get_name() == "top":
-            s = Symbol(node.variable.name, Symbol.Is.Global, type_str=type_str)
-        else:
-            s = Symbol(node.variable.name, 0, type_str=type_str)
+        s = Symbol(node.variable.name, 0, type_str=type_str)
         self.curr_sym_table.add_symbol(s)
 
     @visit.register
     def _(self, node: ast.ClassDefNode):
         self.do_visit(node.name)
+
+        old_parent = self.parent_sym_table
         self.parent_sym_table = self.curr_sym_table
         self.curr_sym_table = symbol_table.Class(node.name.name)
         self.parent_sym_table.add_child(self.curr_sym_table)
@@ -191,6 +208,9 @@ class SymbolTableVisitor(visitor.Visitor):
         for d in node.declarations:
             self.do_visit(d)
 
+        self.curr_sym_table = self.parent_sym_table
+        self.parent_sym_table = old_parent
+
     @visit.register
     def _(self, node: ast.FuncDefNode):
         self.do_visit(node.name)
@@ -198,14 +218,14 @@ class SymbolTableVisitor(visitor.Visitor):
         # if_nested true only if symbol table one level up was function
         if isinstance(self.curr_sym_table, symbol_table.Function): is_nested = True
         
+        old_parent = self.parent_sym_table
         self.parent_sym_table = self.curr_sym_table
         self.curr_sym_table = symbol_table.Function(node.name.name, is_nested=is_nested)
         self.parent_sym_table.add_child(self.curr_sym_table)
 
         for p in node.params:
             self.do_visit(p)
-            # TODO
-            s = Symbol(p.identifier.name, Symbol.Is.Parameter, str(p.id_type))
+            s = Symbol(p.identifier.name, Symbol.Is.Parameter + Symbol.Is.Local, str(p.id_type))
             self.curr_sym_table.add_symbol(s)
         self.do_visit(node.return_type)
 
@@ -219,7 +239,9 @@ class SymbolTableVisitor(visitor.Visitor):
             self.do_visit(d)
         for s in node.statements:
             self.do_visit(s)
+        
         self.curr_sym_table = self.parent_sym_table
+        self.parent_sym_table = old_parent
 
     @visit.register
     def _(self, node: ast.ProgramNode):
