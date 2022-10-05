@@ -1,5 +1,5 @@
 #
-# ASTree version 1.03
+# ASTree version 1.05
 #
 
 from enum import Enum
@@ -38,44 +38,61 @@ class IdentifierNode(Node):
 
 
 class ExprNode:
-    pass
+
+    def __init__(self):
+        self.type_str = ""
+
+    def get_type_str(self):
+        return self.type_str
+
+    def set_type_str(self, type_str: str):
+        self.type_str = type_str
 
 
 class LiteralExprNode(ExprNode):
-    pass
+
+    def __init__(self):
+        super().__init__()
 
 
 class NoneLiteralExprNode(LiteralExprNode):
-    pass
+
+    def __init__(self):
+        super().__init__()
 
 
 class StringLiteralExprNode(LiteralExprNode):
 
     def __init__(self, value: str):
+        super().__init__()
         self.value = value
 
 
 class IntegerLiteralExprNode(LiteralExprNode):
 
     def __init__(self, value: int):
+        super().__init__()
         self.value = value
 
 
 class BooleanLiteralExprNode(LiteralExprNode):
 
     def __init__(self, value: bool):
+        super().__init__()
         self.value = value
 
 
 class IdentifierExprNode(ExprNode):
 
     def __init__(self, identifier: IdentifierNode):
+        super().__init__()
         self.identifier = identifier
 
 
 class BinaryOpExprNode(ExprNode):
 
     def __init__(self, op: Operator, lhs: ExprNode, rhs: ExprNode):
+        super().__init__()
         self.op = op
         self.lhs = lhs
         self.rhs = rhs
@@ -84,6 +101,7 @@ class BinaryOpExprNode(ExprNode):
 class UnaryOpExprNode(ExprNode):
 
     def __init__(self, op: Operator, operand: ExprNode):
+        super().__init__()
         self.op = op
         self.operand = operand
 
@@ -91,6 +109,7 @@ class UnaryOpExprNode(ExprNode):
 class IfExprNode(ExprNode):
 
     def __init__(self, condition: ExprNode, then_expr: ExprNode, else_expr: ExprNode):
+        super().__init__()
         self.condition = condition
         self.then_expr = then_expr
         self.else_expr = else_expr
@@ -99,6 +118,7 @@ class IfExprNode(ExprNode):
 class IndexExprNode(ExprNode):
 
     def __init__(self, list_expr: ExprNode, index: ExprNode):
+        super().__init__()
         self.list_expr = list_expr
         self.index = index
 
@@ -106,6 +126,7 @@ class IndexExprNode(ExprNode):
 class MemberExprNode(ExprNode):
 
     def __init__(self, expr_object: ExprNode, member: IdentifierNode):
+        super().__init__()
         self.expr_object = expr_object
         self.member = member
 
@@ -113,6 +134,7 @@ class MemberExprNode(ExprNode):
 class FunctionCallExprNode(ExprNode):
 
     def __init__(self, identifier: IdentifierNode, args: list[ExprNode]):
+        super().__init__()
         self.identifier = identifier
         self.args = args
 
@@ -120,6 +142,7 @@ class FunctionCallExprNode(ExprNode):
 class MethodCallExprNode(ExprNode):
 
     def __init__(self, member: MemberExprNode, args: list[Optional[ExprNode]]):
+        super().__init__()
         self.member = member
         self.args = args
 
@@ -127,6 +150,7 @@ class MethodCallExprNode(ExprNode):
 class ListExprNode(ExprNode):
 
     def __init__(self, elements: list[ExprNode]):
+        super().__init__()
         self.elements = elements
 
 
@@ -199,11 +223,17 @@ class ClassTypeAnnotationNode(TypeAnnotationNode):
     def __init__(self, name: str):
         self.name = name
 
+    def __str__(self):
+        return self.name
+
 
 class ListTypeAnnotationNode(TypeAnnotationNode):
 
     def __init__(self, elem_type: TypeAnnotationNode):
         self.elem_type = elem_type
+
+    def __str__(self):
+         return '[' + str(self.elem_type) + ']'
 
 
 class TypedVarNode(Node):
