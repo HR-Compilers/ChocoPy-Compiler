@@ -308,7 +308,7 @@ class Parser:
             # if the next token is an equals sign, it was actually a target
             # fix with AST: target may only be ID, member_expr, index_expr
             if self.match_if(Tokentype.OpAssign):
-                # TODO
+
                 # check if prev node was ID, member_expr or index_expr
                 if not (isinstance(expr_or_target_node, ast.IdentifierNode)\
                     or isinstance(expr_or_target_node, ast.IdentifierExprNode)\

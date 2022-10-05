@@ -7,6 +7,8 @@
 #
 
 import functools
+from lib2to3.pygram import Symbols
+import symbol
 import astree as ast
 import visitor
 import symbol_table
@@ -21,6 +23,7 @@ class SymbolTableVisitor(visitor.Visitor):
         self.built_ins = {'print': "", 'len': "int", 'input': 'str'}
         self.root_sym_table = None
         self.curr_sym_table = None
+        self.parent_sym_table = None
         ...  # add more member variables as needed.
         pass
 
@@ -164,9 +167,26 @@ class SymbolTableVisitor(visitor.Visitor):
     def _(self, node: ast.NonLocalDeclNode):
         self.do_visit(node.variable)
 
+        # Find the corresponding variable in the parent scope
+        syms = self.parent_sym_table.get_symbols()
+        for sym in syms:
+            if sym.get_name() == node.variable.name:
+                type_str = sym.get_type_str()
+
+        # If the parent is the module, the variable is global
+        if self.parent_sym_table.get_name() == "top":
+            s = Symbol(node.variable.name, Symbol.Is.Global, type_str=type_str)
+        else:
+            s = Symbol(node.variable.name, 0, type_str=type_str)
+        self.curr_sym_table.add_symbol(s)
+
     @visit.register
     def _(self, node: ast.ClassDefNode):
         self.do_visit(node.name)
+        self.parent_sym_table = self.curr_sym_table
+        self.curr_sym_table = symbol_table.Class(node.name.name)
+        self.parent_sym_table.add_child(self.curr_sym_table)
+
         self.do_visit(node.super_class)
         for d in node.declarations:
             self.do_visit(d)
@@ -174,13 +194,32 @@ class SymbolTableVisitor(visitor.Visitor):
     @visit.register
     def _(self, node: ast.FuncDefNode):
         self.do_visit(node.name)
+        is_nested = False
+        # if_nested true only if symbol table one level up was function
+        if isinstance(self.curr_sym_table, symbol_table.Function): is_nested = True
+        
+        self.parent_sym_table = self.curr_sym_table
+        self.curr_sym_table = symbol_table.Function(node.name.name, is_nested=is_nested)
+        self.parent_sym_table.add_child(self.curr_sym_table)
+
         for p in node.params:
             self.do_visit(p)
+            # TODO
+            s = Symbol(p.identifier.name, Symbol.Is.Parameter, str(p.id_type))
+            self.curr_sym_table.add_symbol(s)
         self.do_visit(node.return_type)
+
+        ret_type = ""
+        if node.return_type is not None:
+            ret_type = str(node.return_type)
+        ret_s = Symbol(node.name.name, Symbol.Is.Local, ret_type)
+        self.parent_sym_table.add_symbol(ret_s)
+
         for d in node.declarations:
             self.do_visit(d)
         for s in node.statements:
             self.do_visit(s)
+        self.curr_sym_table = self.parent_sym_table
 
     @visit.register
     def _(self, node: ast.ProgramNode):
