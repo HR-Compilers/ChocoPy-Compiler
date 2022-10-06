@@ -1,12 +1,11 @@
 from fileinput import filename
-from os import listdir
-from os.path import isfile, join
+# from os import listdir
+# from os.path import isfile, join
 
 import parser
 import disp_symtable
 import semantic_error
 import symtab_visitor
-import print_visitor
 
 # We took all the test files from the github repository of ChocoPy
 # Here we iterate over them and parse each of them as test
@@ -17,7 +16,7 @@ import print_visitor
 
 # for filename in filtered_files:
 
-filename = "tests/test03.cpy"
+filename = "tests/test03.txt"
 
 # Parse the code.
 with open(filename) as f:
