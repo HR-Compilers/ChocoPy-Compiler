@@ -22,7 +22,7 @@ class SymbolTableVisitor(visitor.Visitor):
         self.root_sym_table = None
         self.curr_sym_table = None
         self.parent_sym_table = None
-        ...  # add more member variables as needed.
+        ...  # TODO: add more member variables as needed.
         pass
 
     def do_visit(self, node):

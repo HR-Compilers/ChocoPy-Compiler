@@ -1,6 +1,6 @@
 COMPvenv/
 filereader.py
-
+tests/*.ast
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
