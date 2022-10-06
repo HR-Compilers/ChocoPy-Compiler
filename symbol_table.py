@@ -1,5 +1,5 @@
 #
-#  Symbol table. Version 1.0
+#  Symbol table. Version 1.01
 #
 from enum import IntFlag
 
@@ -68,7 +68,7 @@ class Symbol:
         return self._type_str
 
     def set_type_str(self, type_str):
-        self._flags = type_str
+        self._type_str = type_str
 
 
 class SymbolTable:
