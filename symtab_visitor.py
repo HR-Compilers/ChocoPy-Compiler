@@ -86,6 +86,7 @@ class SymbolTableVisitor(visitor.Visitor):
     @visit.register
     def _(self, node: ast.FunctionCallExprNode):
         self.do_visit(node.identifier)
+        print(node.identifier.name)
         # TODO: 
         # Add the function identifier to the current symbol table
         # If not already present
@@ -97,13 +98,30 @@ class SymbolTableVisitor(visitor.Visitor):
                 break
         
         if not is_present:
-            global_flag = Symbol.Is.Global if self.curr_sym_table == self.root_sym_table else 0
-            s = Symbol(node.identifier.name, Symbol.Is.Local + global_flag, type_str="")
-            self.curr_sym_table.add_symbol(s)
 
-        # check what type the function returns by finding the identifier
-        # First look through built-ins, then through parent symbols...
-        # syms = 
+            # check what type the function returns by finding the identifier
+
+            # First check if its a built-in function: these are global and not local
+            if node.identifier.name in self.built_ins:
+                s = Symbol(node.identifier.name, Symbol.Is.Global, type_str=self.built_ins[node.identifier.name])
+
+            # Else it must be in a parent symbol table
+            else:
+                found = False
+                curr_lvl = self.parent_sym_table
+                while not found:
+                    syms = curr_lvl.get_symbols()
+                    for s in syms:
+                        if s.get_name() == node.identifier.name:
+                            found = True
+                            type_str = s.get_type_str()
+                            break
+                    curr_lvl = curr_lvl.get_parent()
+
+                global_flag = Symbol.Is.Global if curr_lvl == self.root_sym_table else 0
+                s = Symbol(node.identifier.name, global_flag, type_str=type_str)
+                
+            self.curr_sym_table.add_symbol(s)
 
         for a in node.args:
             self.do_visit(a)
@@ -215,7 +233,6 @@ class SymbolTableVisitor(visitor.Visitor):
     def _(self, node: ast.ClassDefNode):
         self.do_visit(node.name)
 
-        old_parent = self.parent_sym_table
         self.parent_sym_table = self.curr_sym_table
         self.curr_sym_table = symbol_table.Class(node.name.name)
         self.parent_sym_table.add_child(self.curr_sym_table)
@@ -227,8 +244,7 @@ class SymbolTableVisitor(visitor.Visitor):
         s = Symbol(node.name.name, Symbol.Is.Global + Symbol.Is.Local, node.name.name)
         self.parent_sym_table.add_symbol(s)
 
-        self.curr_sym_table = self.parent_sym_table
-        self.parent_sym_table = old_parent
+        self.curr_sym_table = self.curr_sym_table.get_parent()   
 
 
     @visit.register
@@ -238,7 +254,6 @@ class SymbolTableVisitor(visitor.Visitor):
         # if_nested true only if symbol table one level up was function
         if isinstance(self.curr_sym_table, symbol_table.Function): is_nested = True
         
-        old_parent = self.parent_sym_table
         self.parent_sym_table = self.curr_sym_table
         self.curr_sym_table = symbol_table.Function(node.name.name, is_nested=is_nested)
         self.parent_sym_table.add_child(self.curr_sym_table)
@@ -262,7 +277,7 @@ class SymbolTableVisitor(visitor.Visitor):
             self.do_visit(s)
         
         self.curr_sym_table = self.parent_sym_table
-        self.parent_sym_table = old_parent
+        self.parent_sym_table = self.curr_sym_table.get_parent()
 
     @visit.register
     def _(self, node: ast.ProgramNode):
