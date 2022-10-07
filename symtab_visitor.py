@@ -87,9 +87,9 @@ class SymbolTableVisitor(visitor.Visitor):
     def _(self, node: ast.FunctionCallExprNode):
         self.do_visit(node.identifier)
         print(node.identifier.name)
-        # TODO: 
-        # Add the function identifier to the current symbol table
-        # If not already present
+
+        # Add the function identifier to the current symbol table,
+        # if not already present
         is_present = False
         local_syms = self.curr_sym_table.get_symbols()
         for lsym in local_syms:
@@ -108,15 +108,21 @@ class SymbolTableVisitor(visitor.Visitor):
             # Else it must be in a parent symbol table
             else:
                 found = False
-                curr_lvl = self.parent_sym_table
-                while not found:
+                curr_lvl = self.curr_sym_table
+
+                # If we have reached the root table,
+                # The parameter does not exist
+                while not found and curr_lvl is not self.root_sym_table:
+                    curr_lvl = curr_lvl.get_parent()
                     syms = curr_lvl.get_symbols()
                     for s in syms:
                         if s.get_name() == node.identifier.name:
                             found = True
                             type_str = s.get_type_str()
                             break
-                    curr_lvl = curr_lvl.get_parent()
+                
+                if not found:
+                    raise semantic_error.UndefinedIdentifierException(node.identifier.name, self.curr_sym_table)
 
                 global_flag = Symbol.Is.Global if curr_lvl == self.root_sym_table else 0
                 s = Symbol(node.identifier.name, global_flag, type_str=type_str)
@@ -189,6 +195,8 @@ class SymbolTableVisitor(visitor.Visitor):
         self.do_visit(node.identifier)
         self.do_visit(node.id_type)
 
+    # We have to check if we are not redefining a variable
+    # TODO: check if type indicated matches type of value
     @visit.register
     def _(self, node: ast.VarDefNode):
         self.do_visit(node.var)
@@ -214,9 +222,10 @@ class SymbolTableVisitor(visitor.Visitor):
                 found = True
                 break
         
+        # Variable does not exist in global scope
         if not found:
             raise semantic_error.DeclarationException(node.variable.name, self.curr_sym_table)
-            
+
         s = Symbol(node.variable.name, Symbol.Is.Global, type_str=type_str)
         self.curr_sym_table.add_symbol(s)
 
