@@ -86,7 +86,23 @@ class SymbolTableVisitor(visitor.Visitor):
     @visit.register
     def _(self, node: ast.FunctionCallExprNode):
         self.do_visit(node.identifier)
-        # TODO: check what type the function returns by finding the identifier
+        # TODO: 
+        # Add the function identifier to the current symbol table
+        # If not already present
+        is_present = False
+        local_syms = self.curr_sym_table.get_symbols()
+        for lsym in local_syms:
+            if lsym.get_name() == node.identifier.name:
+                is_present = True
+                break
+        
+        if not is_present:
+            global_flag = Symbol.Is.Global if self.curr_sym_table == self.root_sym_table else 0
+            s = Symbol(node.identifier.name, Symbol.Is.Local + global_flag, type_str="")
+            self.curr_sym_table.add_symbol(s)
+
+        # check what type the function returns by finding the identifier
+        # First look through built-ins, then through parent symbols...
         # syms = 
 
         for a in node.args:
@@ -208,8 +224,12 @@ class SymbolTableVisitor(visitor.Visitor):
         for d in node.declarations:
             self.do_visit(d)
 
+        s = Symbol(node.name.name, Symbol.Is.Global + Symbol.Is.Local, node.name.name)
+        self.parent_sym_table.add_symbol(s)
+
         self.curr_sym_table = self.parent_sym_table
         self.parent_sym_table = old_parent
+
 
     @visit.register
     def _(self, node: ast.FuncDefNode):
@@ -232,7 +252,8 @@ class SymbolTableVisitor(visitor.Visitor):
         ret_type = ""
         if node.return_type is not None:
             ret_type = str(node.return_type)
-        ret_s = Symbol(node.name.name, Symbol.Is.Local, ret_type)
+        global_flag = Symbol.Is.Global if self.parent_sym_table == self.root_sym_table else 0
+        ret_s = Symbol(node.name.name, Symbol.Is.Local + global_flag, ret_type)
         self.parent_sym_table.add_symbol(ret_s)
 
         for d in node.declarations:

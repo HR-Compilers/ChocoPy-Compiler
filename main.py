@@ -1,29 +1,25 @@
-from fileinput import filename
-# from os import listdir
-# from os.path import isfile, join
-
+#
+# Test semantic analyser. Version 1.0
 import parser
 import disp_symtable
 import semantic_error
 import symtab_visitor
+import print_visitor
+# import type_visitor
 
-# We took all the test files from the github repository of ChocoPy
-# Here we iterate over them and parse each of them as test
-# mypath = "tests/"
-# files = [f for f in listdir(mypath) if isfile(join(mypath, f))]
-# filtered_files = ["tests/" + element for element in files if element.endswith('.py') and not element.startswith('bad')]
-# filtered_files.sort()
+filename = 'tests/test03.txt'
 
-# for filename in filtered_files:
-
-filename = "tests/test03.txt"
+# Read in and print out the code.
+with open(filename) as f:
+    code = f.read()
+print(code)
 
 # Parse the code.
 with open(filename) as f:
     p = parser.Parser(f)
     ast = p.parse()
 
-# Semantic analysis.
+# Now do the semantic analysis.
 try:
     st_visitor = symtab_visitor.SymbolTableVisitor()
     st_visitor.do_visit(ast)
@@ -32,3 +28,9 @@ except semantic_error.ParserException as e:
     exit(-1)
 st = st_visitor.get_symbol_table()
 disp_symtable.print_symtable(st)
+
+# Do the type checking.
+# t_visitor = type_visitor.TypeVisitor(st)
+# t_visitor.do_visit(ast)
+# p_visitor = print_visitor.PrintVisitor()
+# p_visitor.do_visit(ast)
