@@ -198,20 +198,31 @@ class SymbolTableVisitor(visitor.Visitor):
         s = Symbol(node.var.identifier.name, global_flag + Symbol.Is.Local, str(node.var.id_type))
         self.curr_sym_table.add_symbol(s)
 
+
+    # It is illegal for a global declaration to occur at the top level
     @visit.register
     def _(self, node: ast.GlobalDeclNode):
         self.do_visit(node.variable)
+
         # Find the corresponding variable in the global scope
         syms = self.root_sym_table.get_symbols()
         type_str = ""
+        found = False
         for sym in syms:
             if sym.get_name() == node.variable.name:
                 type_str = sym.get_type_str()
+                found = True
+                break
         
+        if not found:
+            raise semantic_error.DeclarationException(node.variable.name, self.curr_sym_table)
+            
         s = Symbol(node.variable.name, Symbol.Is.Global, type_str=type_str)
         self.curr_sym_table.add_symbol(s)
 
-    # nonlocal can only be used inside nested functions!
+
+    # it is illegal for a nonlocal declaration to occur outside a nested function, 
+    # or to refer to a global variable.    
     @visit.register
     def _(self, node: ast.NonLocalDeclNode):
         self.do_visit(node.variable)
@@ -221,11 +232,21 @@ class SymbolTableVisitor(visitor.Visitor):
         # Find the corresponding variable in the parent scope
         syms = self.parent_sym_table.get_symbols()
         type_str = ""
+        found = False
         for sym in syms:
             if sym.get_name() == node.variable.name:
-                type_str = sym.get_type_str()
+                # check if it's a global variable
+                if sym.is_gobal():
+                    raise semantic_error.DeclarationException(node.variable.name, self.curr_sym_table)
+                else:
+                    type_str = sym.get_type_str()
+                    found = True
+                    break
+        
+        # Couldn't find variable in enclosing scope
+        if not found:
+            raise semantic_error.DeclarationException(node.variable.name, self.curr_sym_table)
 
-        # If the parent is the module, the variable is global
         s = Symbol(node.variable.name, 0, type_str=type_str)
         self.curr_sym_table.add_symbol(s)
 
