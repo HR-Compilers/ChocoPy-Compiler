@@ -304,14 +304,14 @@ class SymbolTableVisitor(visitor.Visitor):
             raise semantic_error.RedefinedIdentifierException(node.name, self.curr_sym_table.get_name())
         self.do_visit(node.name)
 
-        self.parent_sym_table = self.curr_sym_table
-        self.curr_sym_table = symbol_table.Class(node.name.name)
-        self.parent_sym_table.add_child(self.curr_sym_table)
-
         # check if super class is defined
         if not self.is_defined(node.super_class) and node.super_class.name != "object":
             raise semantic_error.UndefinedIdentifierException(node.super_class.name, self.curr_sym_table.get_name())
         self.do_visit(node.super_class)
+
+        self.parent_sym_table = self.curr_sym_table
+        self.curr_sym_table = symbol_table.Class(node.name.name, node.super_class)
+        self.parent_sym_table.add_child(self.curr_sym_table)
 
         # We need to add the super class to the symbol table if not already there
         super_exists = False
