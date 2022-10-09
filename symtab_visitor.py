@@ -243,9 +243,9 @@ class SymbolTableVisitor(visitor.Visitor):
                 found = True
                 break
         
-        # Variable does not exist in global scope
+        # Variable does not exist
         if not found:
-            raise semantic_error.DeclarationException(node.variable.name, self.curr_sym_table.get_name())
+            raise semantic_error.UndefinedIdentifierException(node.variable.name, self.curr_sym_table.get_name())
 
         s = Symbol(node.variable.name, Symbol.Is.Global, type_str=type_str)
         self.curr_sym_table.add_symbol(s)
@@ -275,7 +275,7 @@ class SymbolTableVisitor(visitor.Visitor):
         
         # Couldn't find variable in enclosing scope
         if not found:
-            raise semantic_error.DeclarationException(node.variable.name, self.curr_sym_table.get_name())
+            raise semantic_error.UndefinedIdentifierException(node.variable.name, self.curr_sym_table.get_name())
 
         s = Symbol(node.variable.name, 0, type_str=type_str)
         self.curr_sym_table.add_symbol(s)
