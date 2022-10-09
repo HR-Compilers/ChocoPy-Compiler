@@ -1,5 +1,5 @@
 #
-# PrintVisitor version 1.02
+# PrintVisitor version 1.03
 #
 import functools
 import astree as ast
@@ -42,7 +42,7 @@ class PrintVisitor(visitor.Visitor):
 
     @visit.register
     def _(self, node: ast.NoneLiteralExprNode):
-        self.print(f'(None) t:{node.get_type_str()=}')
+        self.print(f'(None) t:{node.get_type_str()}')
 
     @visit.register
     def _(self, node: ast.StringLiteralExprNode):
@@ -66,20 +66,20 @@ class PrintVisitor(visitor.Visitor):
 
     @visit.register
     def _(self, node: ast.BinaryOpExprNode):
-        self.print(f'(BinaryOperator {node.op} t:{node.get_type_str()}')
+        self.print(f'(BinaryOperator {node.op}')
         self.indent += 1
         self.do_visit(node.lhs)
         self.do_visit(node.rhs)
         self.indent -= 1
-        self.print(')')
+        self.print(f't:{node.get_type_str()})')
 
     @visit.register
     def _(self, node: ast.UnaryOpExprNode):
-        self.print(f'(UnaryOperator {node.op} t:{node.get_type_str()}')
+        self.print(f'(UnaryOperator {node.op}')
         self.indent += 1
         self.do_visit(node.operand)
         self.indent -= 1
-        self.print(')')
+        self.print(f't:{node.get_type_str()})')
 
     @visit.register
     def _(self, node: ast.IfExprNode):
@@ -98,7 +98,7 @@ class PrintVisitor(visitor.Visitor):
         self.do_visit(node.list_expr)
         self.do_visit(node.index)
         self.indent -= 1
-        self.print(')')
+        self.print(f't:{node.get_type_str()})')
 
     @visit.register
     def _(self, node: ast.MemberExprNode):
@@ -107,7 +107,7 @@ class PrintVisitor(visitor.Visitor):
         self.do_visit(node.expr_object)
         self.do_visit(node.member)
         self.indent -= 1
-        self.print(')')
+        self.print(f't:{node.get_type_str()})')
 
     @visit.register
     def _(self, node: ast.FunctionCallExprNode):
@@ -117,7 +117,7 @@ class PrintVisitor(visitor.Visitor):
         for a in node.args:
             self.do_visit(a)
         self.indent -= 1
-        self.print(')')
+        self.print(f't:{node.get_type_str()})')
 
     @visit.register
     def _(self, node: ast.MethodCallExprNode):
@@ -127,7 +127,7 @@ class PrintVisitor(visitor.Visitor):
         for a in node.args:
             self.do_visit(a)
         self.indent -= 1
-        self.print(')')
+        self.print(f't:{node.get_type_str()})')
 
     @visit.register
     def _(self, node: ast.ListExprNode):
@@ -136,7 +136,7 @@ class PrintVisitor(visitor.Visitor):
         for e in node.elements:
             self.do_visit(e)
         self.indent -= 1
-        self.print(')')
+        self.print(f't:{node.get_type_str()})')
 
     @visit.register
     def _(self, node: ast.PassStmtNode):

@@ -1,5 +1,5 @@
 #
-#  Symbol table. Version 1.01
+#  Symbol table. Version 1.02
 #
 from enum import IntFlag
 
@@ -189,9 +189,16 @@ class Class(SymbolTable):
     """
     A namespace of a class. This class inherits SymbolTable.
     """
-    def __init__(self, name):
+    def __init__(self, name, super_class):
         super().__init__(name)
         self._type = 'class'
+        self._super_class = super_class
+
+    def get_super_class(self):
+        """
+        Return the name of the superclass.
+        """
+        return self._super_class
 
     def get_methods(self):
         """
@@ -201,3 +208,12 @@ class Class(SymbolTable):
         for st in self._children:
             d[st.get_name()] = 1
         return tuple(d)
+
+    def get_methods_sym_table(self, name: str):
+        """
+        Return the child symbol-table of the given method if it exists, otherwise None.
+        """
+        for st in self._children:
+            if st.get_name() == name:
+                return st
+        return None
