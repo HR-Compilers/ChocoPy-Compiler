@@ -23,7 +23,7 @@ class SymbolTableVisitor(visitor.Visitor):
         self.curr_sym_table = None
         self.parent_sym_table = None
 
-    def check_redefined(self, node: ast.IdentifierNode):
+    def is_defined(self, node: ast.IdentifierNode):
         found = False
         curr_lvl = self.curr_sym_table
 
@@ -31,10 +31,14 @@ class SymbolTableVisitor(visitor.Visitor):
         while not found and curr_lvl is not None:
             syms = curr_lvl.get_symbols()
             for s in syms:
-                # If it already exists, we are redefining
+                # If it exists
                 if s.get_name() == node.name:
-                    raise semantic_error.RedefinedIdentifierException(node.name, self.curr_sym_table.get_name())
+                    found = True
+                    break
+            if found: break
             curr_lvl = curr_lvl.get_parent()
+        return found
+
 
     def do_visit(self, node):
         if node:
@@ -114,7 +118,6 @@ class SymbolTableVisitor(visitor.Visitor):
     @visit.register
     def _(self, node: ast.FunctionCallExprNode):
         self.do_visit(node.identifier)
-        print(node.identifier.name)
 
         # Add the function identifier to the current symbol table,
         # if not already present
@@ -229,7 +232,8 @@ class SymbolTableVisitor(visitor.Visitor):
     @visit.register
     def _(self, node: ast.VarDefNode):
         # We cannot redefine variables
-        self.check_redefined(node.var.identifier)
+        if self.is_defined(node.var.identifier):
+            raise semantic_error.RedefinedIdentifierException(node.name, self.curr_sym_table.get_name())
         self.do_visit(node.var)
         self.do_visit(node.value)
 
@@ -296,18 +300,29 @@ class SymbolTableVisitor(visitor.Visitor):
     @visit.register
     def _(self, node: ast.ClassDefNode):
         # We cannot redefine classes
-        self.check_redefined(node.name)
+        if self.is_defined(node.name):
+            raise semantic_error.RedefinedIdentifierException(node.name, self.curr_sym_table.get_name())
         self.do_visit(node.name)
 
         self.parent_sym_table = self.curr_sym_table
         self.curr_sym_table = symbol_table.Class(node.name.name)
         self.parent_sym_table.add_child(self.curr_sym_table)
 
+        # check if super class is defined
+        if not self.is_defined(node.super_class) and node.super_class.name != "object":
+            raise semantic_error.UndefinedIdentifierException(node.super_class.name, self.curr_sym_table.get_name())
         self.do_visit(node.super_class)
 
         # We need to add the super class to the symbol table if not already there
-        # If the super class is not already in the current symbol table, it's not local
-        if node.super_class.name not in self.parent_sym_table.get_symbols():
+        super_exists = False
+        par_syms = self.parent_sym_table.get_symbols()
+        for ps in par_syms:
+            if ps.get_name() == node.super_class.name:
+                super_exists = True
+                break
+
+        if not super_exists:
+            # If the super class is not already in the current symbol table, it's not local
             super_symbol = Symbol(node.super_class.name, Symbol.Is.Global, node.super_class.name)
             self.parent_sym_table.add_symbol(super_symbol)
 
@@ -323,7 +338,8 @@ class SymbolTableVisitor(visitor.Visitor):
     @visit.register
     def _(self, node: ast.FuncDefNode):
         # We cannot overload / redefine functions
-        self.check_redefined(node.name)
+        if self.is_defined(node.name):
+            raise semantic_error.RedefinedIdentifierException(node.name, self.curr_sym_table.get_name())
         self.do_visit(node.name)
         is_nested = False
         # if_nested true only if symbol table one level up was function
