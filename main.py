@@ -7,7 +7,7 @@ import symtab_visitor
 import print_visitor
 # import type_visitor
 
-filename = 'tests/test03.txt'
+filename = 'tests/class_method.py'
 
 # Read in and print out the code.
 with open(filename) as f:

@@ -22,8 +22,6 @@ class SymbolTableVisitor(visitor.Visitor):
         self.root_sym_table = None
         self.curr_sym_table = None
         self.parent_sym_table = None
-        ...  # TODO: add more member variables as needed.
-        pass
 
     def do_visit(self, node):
         if node:
@@ -54,8 +52,25 @@ class SymbolTableVisitor(visitor.Visitor):
     def _(self, node: ast.BooleanLiteralExprNode):
         ...
 
+    # This identifier must already exist
     @visit.register
     def _(self, node: ast.IdentifierExprNode):
+        # search scopes for variable - local first, then enclosing, then global
+        found = False
+        curr_lvl = self.curr_sym_table
+        while not found and curr_lvl.get_parent() is not None:
+            syms = curr_lvl.get_symbols()
+            for s in syms:
+                if s.get_name() == node.identifier.name:
+                    found = True
+                    break
+            if found: break
+            curr_lvl = curr_lvl.get_parent()
+
+        # If we have reached the root table and found nothing
+        # The variable is undefined
+        if not found:
+            raise semantic_error.UndefinedIdentifierException(node.identifier.name, self.curr_sym_table.get_name())
         self.do_visit(node.identifier)
 
     @visit.register
@@ -111,7 +126,7 @@ class SymbolTableVisitor(visitor.Visitor):
                 curr_lvl = self.curr_sym_table
 
                 # If we have reached the root table,
-                # The parameter does not exist
+                # The function does not exist
                 while not found and curr_lvl is not self.root_sym_table:
                     curr_lvl = curr_lvl.get_parent()
                     syms = curr_lvl.get_symbols()
@@ -120,9 +135,10 @@ class SymbolTableVisitor(visitor.Visitor):
                             found = True
                             type_str = s.get_type_str()
                             break
+                    if found: break
                 
                 if not found:
-                    raise semantic_error.UndefinedIdentifierException(node.identifier.name, self.curr_sym_table)
+                    raise semantic_error.UndefinedIdentifierException(node.identifier.name, self.curr_sym_table.get_name())
 
                 global_flag = Symbol.Is.Global if curr_lvl == self.root_sym_table else 0
                 s = Symbol(node.identifier.name, global_flag, type_str=type_str)
@@ -151,10 +167,12 @@ class SymbolTableVisitor(visitor.Visitor):
     def _(self, node: ast.ReturnStmtNode):
         self.do_visit(node.expr)
 
+    # For any assignment, all variables must already be in scope
     @visit.register
     def _(self, node: ast.AssignStmtNode):
         for t in node.targets:
             self.do_visit(t)
+
         self.do_visit(node.expr)
 
     @visit.register
@@ -207,10 +225,13 @@ class SymbolTableVisitor(visitor.Visitor):
         self.curr_sym_table.add_symbol(s)
 
 
-    # It is illegal for a global declaration to occur at the top level
     @visit.register
     def _(self, node: ast.GlobalDeclNode):
         self.do_visit(node.variable)
+
+        # It is illegal for a global declaration to occur at the top level
+        if self.curr_sym_table == self.root_sym_table:
+            raise semantic_error.DeclarationException(node.variable.name, self.curr_sym_table.get_name())
 
         # Find the corresponding variable in the global scope
         syms = self.root_sym_table.get_symbols()
@@ -224,17 +245,17 @@ class SymbolTableVisitor(visitor.Visitor):
         
         # Variable does not exist in global scope
         if not found:
-            raise semantic_error.DeclarationException(node.variable.name, self.curr_sym_table)
+            raise semantic_error.DeclarationException(node.variable.name, self.curr_sym_table.get_name())
 
         s = Symbol(node.variable.name, Symbol.Is.Global, type_str=type_str)
         self.curr_sym_table.add_symbol(s)
 
-
-    # it is illegal for a nonlocal declaration to occur outside a nested function, 
-    # or to refer to a global variable.    
+    
     @visit.register
     def _(self, node: ast.NonLocalDeclNode):
         self.do_visit(node.variable)
+        
+        # it is illegal for a nonlocal declaration to occur outside a nested function, 
         if not self.curr_sym_table.is_nested():
             raise semantic_error.DeclarationException(node.variable.name, self.curr_sym_table.get_name())
 
@@ -244,9 +265,9 @@ class SymbolTableVisitor(visitor.Visitor):
         found = False
         for sym in syms:
             if sym.get_name() == node.variable.name:
-                # check if it's a global variable
-                if sym.is_gobal():
-                    raise semantic_error.DeclarationException(node.variable.name, self.curr_sym_table)
+                # Illegal to refer to a global variable
+                if sym.is_global():
+                    raise semantic_error.DeclarationException(node.variable.name, self.curr_sym_table.get_name())
                 else:
                     type_str = sym.get_type_str()
                     found = True
@@ -254,7 +275,7 @@ class SymbolTableVisitor(visitor.Visitor):
         
         # Couldn't find variable in enclosing scope
         if not found:
-            raise semantic_error.DeclarationException(node.variable.name, self.curr_sym_table)
+            raise semantic_error.DeclarationException(node.variable.name, self.curr_sym_table.get_name())
 
         s = Symbol(node.variable.name, 0, type_str=type_str)
         self.curr_sym_table.add_symbol(s)
@@ -268,6 +289,13 @@ class SymbolTableVisitor(visitor.Visitor):
         self.parent_sym_table.add_child(self.curr_sym_table)
 
         self.do_visit(node.super_class)
+
+        # We need to add the super class to the symbol table if not already there
+        # If the super class is not already in the current symbol table, it's not local
+        if node.super_class.name not in self.parent_sym_table.get_symbols():
+            super_symbol = Symbol(node.super_class.name, Symbol.Is.Global, node.super_class.name)
+            self.parent_sym_table.add_symbol(super_symbol)
+
         for d in node.declarations:
             self.do_visit(d)
 
