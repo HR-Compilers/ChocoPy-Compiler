@@ -23,6 +23,19 @@ class SymbolTableVisitor(visitor.Visitor):
         self.curr_sym_table = None
         self.parent_sym_table = None
 
+    def check_redefined(self, node: ast.IdentifierNode):
+        found = False
+        curr_lvl = self.curr_sym_table
+
+        # If we have reached the root table, we haven't found it
+        while not found and curr_lvl is not None:
+            syms = curr_lvl.get_symbols()
+            for s in syms:
+                # If it already exists, we are redefining
+                if s.get_name() == node.name:
+                    raise semantic_error.RedefinedIdentifierException(node.name, self.curr_sym_table.get_name())
+            curr_lvl = curr_lvl.get_parent()
+
     def do_visit(self, node):
         if node:
             self.visit(node)
@@ -58,7 +71,7 @@ class SymbolTableVisitor(visitor.Visitor):
         # search scopes for variable - local first, then enclosing, then global
         found = False
         curr_lvl = self.curr_sym_table
-        while not found and curr_lvl.get_parent() is not None:
+        while not found and curr_lvl is not None:
             syms = curr_lvl.get_symbols()
             for s in syms:
                 if s.get_name() == node.identifier.name:
@@ -213,10 +226,10 @@ class SymbolTableVisitor(visitor.Visitor):
         self.do_visit(node.identifier)
         self.do_visit(node.id_type)
 
-    # We have to check if we are not redefining a variable
-    # TODO: check if type indicated matches type of value
     @visit.register
     def _(self, node: ast.VarDefNode):
+        # We cannot redefine variables
+        self.check_redefined(node.var.identifier)
         self.do_visit(node.var)
         self.do_visit(node.value)
 
@@ -282,6 +295,8 @@ class SymbolTableVisitor(visitor.Visitor):
 
     @visit.register
     def _(self, node: ast.ClassDefNode):
+        # We cannot redefine classes
+        self.check_redefined(node.name)
         self.do_visit(node.name)
 
         self.parent_sym_table = self.curr_sym_table
@@ -307,6 +322,8 @@ class SymbolTableVisitor(visitor.Visitor):
 
     @visit.register
     def _(self, node: ast.FuncDefNode):
+        # We cannot overload / redefine functions
+        self.check_redefined(node.name)
         self.do_visit(node.name)
         is_nested = False
         # if_nested true only if symbol table one level up was function
@@ -325,6 +342,7 @@ class SymbolTableVisitor(visitor.Visitor):
         ret_type = ""
         if node.return_type is not None:
             ret_type = str(node.return_type)
+
         global_flag = Symbol.Is.Global if self.parent_sym_table == self.root_sym_table else 0
         ret_s = Symbol(node.name.name, Symbol.Is.Local + global_flag, ret_type)
         self.parent_sym_table.add_symbol(ret_s)
