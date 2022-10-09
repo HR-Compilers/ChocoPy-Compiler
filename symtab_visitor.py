@@ -18,7 +18,7 @@ class SymbolTableVisitor(visitor.Visitor):
 
     def __init__(self):
         # Built-in functions and their return types.
-        self.built_ins = {'print': '<None>', 'len': "int", 'input': 'str', 'object': 'object'}
+        self.built_ins = {'print': "", 'len': "int", 'input': 'str'}
         self.root_sym_table = None
         self.curr_sym_table = None
         self.parent_sym_table = None
@@ -247,7 +247,6 @@ class SymbolTableVisitor(visitor.Visitor):
         self.do_visit(node.variable)
 
         # It is illegal for a global declaration to occur at the top level
-        # from the language reference of ChocoPy
         if self.curr_sym_table == self.root_sym_table:
             raise semantic_error.DeclarationException(node.variable.name, self.curr_sym_table.get_name())
 

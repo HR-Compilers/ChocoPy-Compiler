@@ -1,5 +1,5 @@
 #
-# ASTree version 1.06
+# ASTree version 1.05
 #
 
 from enum import Enum
@@ -25,11 +25,7 @@ class Operator(Enum):
 
 
 class Node:
-
-    def __str__(self):
-        return self.__class__.__name__ \
-               + (' ' + str(self.name) if hasattr(self, "name") else '') \
-               + (' ' + str(self.identifier) if hasattr(self, "identifier") else '')
+    pass
 
 
 class IdentifierNode(Node):
@@ -41,7 +37,7 @@ class IdentifierNode(Node):
 #######################################################
 
 
-class ExprNode(Node):
+class ExprNode:
 
     def __init__(self):
         self.type_str = ""
@@ -161,7 +157,7 @@ class ListExprNode(ExprNode):
 #######################################################
 
 
-class StmtNode(Node):
+class StmtNode:
     pass
 
 
@@ -227,7 +223,7 @@ class ClassTypeAnnotationNode(TypeAnnotationNode):
     def __init__(self, name: str):
         self.name = name
 
-    def to_str(self):
+    def __str__(self):
         return self.name
 
 
@@ -236,8 +232,8 @@ class ListTypeAnnotationNode(TypeAnnotationNode):
     def __init__(self, elem_type: TypeAnnotationNode):
         self.elem_type = elem_type
 
-    def to_str(self):
-        return '[' + self.elem_type.to_str() + ']'
+    def __str__(self):
+         return '[' + str(self.elem_type) + ']'
 
 
 class TypedVarNode(Node):

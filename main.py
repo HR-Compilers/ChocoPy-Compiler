@@ -5,7 +5,7 @@ import disp_symtable
 import semantic_error
 import symtab_visitor
 import print_visitor
-import type_visitor
+# import type_visitor
 
 filename = 'tests/lang_ref_test.py'
 
@@ -30,7 +30,7 @@ st = st_visitor.get_symbol_table()
 disp_symtable.print_symtable(st)
 
 # Do the type checking.
-t_visitor = type_visitor.TypeVisitor(st)
-t_visitor.do_visit(ast)
-p_visitor = print_visitor.PrintVisitor()
-p_visitor.do_visit(ast)
+# t_visitor = type_visitor.TypeVisitor(st)
+# t_visitor.do_visit(ast)
+# p_visitor = print_visitor.PrintVisitor()
+# p_visitor.do_visit(ast)
