@@ -356,6 +356,14 @@ class TypeVisitor(visitor.Visitor):
                 node.set_type_str('int')
             else:
                 raise semantic_error.TypeException(node, node.operand.get_type_str(), 'int')
+        # Not works on bools only
+        elif node.op == Operator.Not:
+            if node.operand.get_type_str() == 'bool':
+                node.set_type_str('bool')
+            else:
+                raise semantic_error.TypeException(node, node.operand.get_type_str(), 'bool')
+        else:
+            assert False, "Should not happen, unary operators are (-) and Not only"
 
     @visit.register
     def _(self, node: ast.IfExprNode):
@@ -363,10 +371,19 @@ class TypeVisitor(visitor.Visitor):
         self.do_visit(node.then_expr)
         self.do_visit(node.else_expr)
 
+        # condition must be a bool
+        if node.condition.get_type_str() != 'bool':
+            self.type_error(node, node.condition.get_type_str, 'bool')
+        else:
+            # The type becomes the join of the then_expr and the else_expr
+            node.set_type_str(self.t_env.join(node.then_expr.get_type_str(), node.else_expr.get_type_str()))
+
     @visit.register
     def _(self, node: ast.IndexExprNode):
         self.do_visit(node.list_expr)
         self.do_visit(node.index)
+
+        # the list_expr must be a list type
 
     @visit.register
     def _(self, node: ast.ListExprNode):

@@ -28,6 +28,9 @@ class SymbolTableVisitor(visitor.Visitor):
         found = False
         curr_lvl = self.curr_sym_table
 
+        if node.name in self.built_ins:
+            found = True
+
         # If we have reached the root table, we haven't found it
         while not found and curr_lvl is not None:
             syms = curr_lvl.get_symbols()
