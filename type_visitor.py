@@ -355,46 +355,65 @@ class TypeVisitor(visitor.Visitor):
             if node.operand.get_type_str() == 'int':
                 node.set_type_str('int')
             else:
-                raise semantic_error.TypeException(node, node.operand.get_type_str(), 'int')
+                raise self.type_error(node, node.operand.get_type_str(), 'int')
         # Not works on bools only
         elif node.op == Operator.Not:
             if node.operand.get_type_str() == 'bool':
                 node.set_type_str('bool')
             else:
-                raise semantic_error.TypeException(node, node.operand.get_type_str(), 'bool')
+                raise self.type_error(node, node.operand.get_type_str(), 'bool')
         else:
             assert False, "Should not happen, unary operators are (-) and Not only"
 
     @visit.register
     def _(self, node: ast.IfExprNode):
         self.do_visit(node.condition)
-        self.do_visit(node.then_expr)
-        self.do_visit(node.else_expr)
-
         # condition must be a bool
         if node.condition.get_type_str() != 'bool':
             self.type_error(node, node.condition.get_type_str, 'bool')
-        else:
-            # The type becomes the join of the then_expr and the else_expr
-            node.set_type_str(self.t_env.join(node.then_expr.get_type_str(), node.else_expr.get_type_str()))
+
+        self.do_visit(node.then_expr)
+        self.do_visit(node.else_expr)
+        # The type becomes the join of the then_expr and the else_expr
+        node.set_type_str(self.t_env.join(node.then_expr.get_type_str(), node.else_expr.get_type_str()))
 
     @visit.register
     def _(self, node: ast.IndexExprNode):
         self.do_visit(node.list_expr)
-        self.do_visit(node.index)
-
         # the list_expr must be a list type
+        if not self.t_env.is_list_type(node.list_expr.get_type_str()):
+            self.type_error(node, node.list_expr.get_type_str(), 'expected str or list-type')
+
+        self.do_visit(node.index)
+        if node.index.get_type_str() != 'int':
+            self.type_error(node, node.index.get_type_str(), 'int')
+
+        node.set_type_str(self.t_env.list_elem_type(node.list_expr.get_type_str()))
 
     @visit.register
     def _(self, node: ast.ListExprNode):
-        for e in node.elements:
-            self.do_visit(e)
+        if not node.elements:
+            node.set_type_str("<Empty>")
+        else:
+            for i,e in enumerate(node.elements):
+                self.do_visit(e)
+                if i == 0:
+                    joined_type = e.get_type_str()
+                else:
+                    joined_type = self.t_env.join(joined_type, e.get_type_str())
+            node.set_type_str(self.t_env.list_type(joined_type))
 
     @visit.register
     def _(self, node: ast.ReturnStmtNode):
         # Note, if there is no return expression, set the type to return type to <None>.
         # Also, throw and exception if return statement is used outside a function
         #    self.invalid_use_error(node, "return statement used outside a function")
+        if self.t_env.get_scope_symbol_table().get_type() != 'function':
+            self.invalid_use_error(node, "return statement used outside a function")      
+
+        # no return type means is None
+        if node.expr is None:
+            node.expr = ast.NoneLiteralExprNode()
         self.do_visit(node.expr)
 
     @visit.register

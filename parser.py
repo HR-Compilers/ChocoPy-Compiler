@@ -298,7 +298,7 @@ class Parser:
 
         elif self.match_if(Tokentype.KwReturn):
             expr_node = None
-            if self.token.type != Tokentype.Newline:
+            if self.token.type not in [Tokentype.Newline, Tokentype.Dedent]:
                 expr_node = self.expr()
             return ast.ReturnStmtNode(expr_node)
         # now its either target or expr, so we match on expr

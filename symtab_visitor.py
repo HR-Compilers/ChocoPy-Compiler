@@ -19,7 +19,7 @@ class SymbolTableVisitor(visitor.Visitor):
 
     def __init__(self):
         # Built-in functions and their return types.
-        self.built_ins = {'print': "", 'len': "int", 'input': 'str'}
+        self.built_ins = {'print': "<None>", 'len': "int", 'input': 'str', 'object': 'object'}
         self.root_sym_table = None
         self.curr_sym_table = None
         self.parent_sym_table = None
@@ -261,7 +261,6 @@ class SymbolTableVisitor(visitor.Visitor):
 
         # Find the corresponding variable in the global scope
         syms = self.root_sym_table.get_symbols()
-        type_str = ""
         found = False
         for sym in syms:
             if sym.get_name() == node.variable.name:
@@ -286,7 +285,6 @@ class SymbolTableVisitor(visitor.Visitor):
 
         # Find the corresponding variable in the parent scope
         syms = self.parent_sym_table.get_symbols()
-        type_str = ""
         found = False
         for sym in syms:
             if sym.get_name() == node.variable.name:
@@ -364,7 +362,7 @@ class SymbolTableVisitor(visitor.Visitor):
             self.curr_sym_table.add_symbol(s)
         self.do_visit(node.return_type)
 
-        ret_type = ""
+        ret_type = "<None>"
         if node.return_type is not None:
             ret_type = node.return_type.to_str()
 
