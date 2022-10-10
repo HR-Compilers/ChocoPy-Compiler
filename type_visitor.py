@@ -350,6 +350,12 @@ class TypeVisitor(visitor.Visitor):
     @visit.register
     def _(self, node: ast.UnaryOpExprNode):
         self.do_visit(node.operand)
+        # Minus operator works on integers only
+        if node.op == Operator.Minus:
+            if node.operand.get_type_str() == 'int':
+                node.set_type_str('int')
+            else:
+                raise semantic_error.TypeException(node, node.operand.get_type_str(), 'int')
 
     @visit.register
     def _(self, node: ast.IfExprNode):

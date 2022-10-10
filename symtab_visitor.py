@@ -7,6 +7,7 @@
 #
 
 import functools
+from re import T
 import astree as ast
 import visitor
 import symbol_table
@@ -73,21 +74,27 @@ class SymbolTableVisitor(visitor.Visitor):
     @visit.register
     def _(self, node: ast.IdentifierExprNode):
         # search scopes for variable - local first, then enclosing, then global
-        found = False
+        found_symbol = None
         curr_lvl = self.curr_sym_table
-        while not found and curr_lvl is not None:
+        while found_symbol is None and curr_lvl is not None:
             syms = curr_lvl.get_symbols()
             for s in syms:
                 if s.get_name() == node.identifier.name:
-                    found = True
+                    found_symbol = s
                     break
-            if found: break
+            if found_symbol is not None: break
             curr_lvl = curr_lvl.get_parent()
 
         # If we have reached the root table and found nothing
         # The variable is undefined
-        if not found:
+        if found_symbol is None:
             raise semantic_error.UndefinedIdentifierException(node.identifier.name, self.curr_sym_table.get_name())
+
+        # If the variable is in an enclosing scope, we put it in current scope as read-only
+        if curr_lvl != self.curr_sym_table:
+            global_flag = Symbol.Is.Global if found_symbol.is_global() else 0
+            new_s = Symbol(node.identifier.name, Symbol.Is.ReadOnly + global_flag, type_str=found_symbol.get_type_str())
+            self.curr_sym_table.add_symbol(new_s)
         self.do_visit(node.identifier)
 
     @visit.register
@@ -265,7 +272,6 @@ class SymbolTableVisitor(visitor.Visitor):
 
         s = Symbol(node.variable.name, Symbol.Is.Global, type_str=type_str)
         self.curr_sym_table.add_symbol(s)
-
     
     @visit.register
     def _(self, node: ast.NonLocalDeclNode):
@@ -340,6 +346,7 @@ class SymbolTableVisitor(visitor.Visitor):
         if self.is_defined(node.name):
             raise semantic_error.RedefinedIdentifierException(node.name, self.curr_sym_table.get_name())
         self.do_visit(node.name)
+
         is_nested = False
         # if_nested true only if symbol table one level up was function
         if isinstance(self.curr_sym_table, symbol_table.Function): is_nested = True
