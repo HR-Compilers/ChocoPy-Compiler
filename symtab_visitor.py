@@ -238,7 +238,7 @@ class SymbolTableVisitor(visitor.Visitor):
         self.do_visit(node.value)
 
         global_flag = Symbol.Is.Global if self.curr_sym_table == self.root_sym_table else 0
-        s = Symbol(node.var.identifier.name, global_flag + Symbol.Is.Local, str(node.var.id_type))
+        s = Symbol(node.var.identifier.name, global_flag + Symbol.Is.Local, node.var.id_type.to_str())
         self.curr_sym_table.add_symbol(s)
 
 
@@ -309,7 +309,7 @@ class SymbolTableVisitor(visitor.Visitor):
         self.do_visit(node.super_class)
 
         self.parent_sym_table = self.curr_sym_table
-        self.curr_sym_table = symbol_table.Class(node.name.name)
+        self.curr_sym_table = symbol_table.Class(node.name.name, node.super_class.name)
         self.parent_sym_table.add_child(self.curr_sym_table)
 
         # We need to add the super class to the symbol table if not already there
@@ -350,13 +350,13 @@ class SymbolTableVisitor(visitor.Visitor):
 
         for p in node.params:
             self.do_visit(p)
-            s = Symbol(p.identifier.name, Symbol.Is.Parameter + Symbol.Is.Local, str(p.id_type))
+            s = Symbol(p.identifier.name, Symbol.Is.Parameter + Symbol.Is.Local, p.id_type.to_str())
             self.curr_sym_table.add_symbol(s)
         self.do_visit(node.return_type)
 
         ret_type = ""
         if node.return_type is not None:
-            ret_type = str(node.return_type)
+            ret_type = node.return_type.to_str()
 
         global_flag = Symbol.Is.Global if self.parent_sym_table == self.root_sym_table else 0
         ret_s = Symbol(node.name.name, Symbol.Is.Local + global_flag, ret_type)

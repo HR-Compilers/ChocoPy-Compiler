@@ -1,13 +1,15 @@
 #
-# Test semantic analyser. Version 1.0
+# Test semantic analyser. Version 1.1
 import parser
 import disp_symtable
 import semantic_error
 import symtab_visitor
+import type_env
+import type_visitor
 import print_visitor
-# import type_visitor
 
-filename = 'tests/lang_ref_test.py'
+
+filename = 'tests/test03.cpy'
 
 # Read in and print out the code.
 with open(filename) as f:
@@ -19,18 +21,25 @@ with open(filename) as f:
     p = parser.Parser(f)
     ast = p.parse()
 
-# Now do the semantic analysis.
+# Do the symbol-table construction.
 try:
     st_visitor = symtab_visitor.SymbolTableVisitor()
     st_visitor.do_visit(ast)
-except semantic_error.ParserException as e:
+except semantic_error.CompilerException as e:
     print(e.message)
     exit(-1)
 st = st_visitor.get_symbol_table()
-disp_symtable.print_symtable(st)
+ds = disp_symtable.DispSymbolTable()
+ds.print_symtable(st)
 
 # Do the type checking.
-# t_visitor = type_visitor.TypeVisitor(st)
-# t_visitor.do_visit(ast)
-# p_visitor = print_visitor.PrintVisitor()
-# p_visitor.do_visit(ast)
+te = type_env.TypeEnvironment(st)
+try:
+    t_visitor = type_visitor.TypeVisitor(te)
+    t_visitor.do_visit(ast)
+except semantic_error.CompilerException as e:
+    print(e.message)
+    exit(-1)
+
+p_visitor = print_visitor.PrintVisitor()
+p_visitor.do_visit(ast)
