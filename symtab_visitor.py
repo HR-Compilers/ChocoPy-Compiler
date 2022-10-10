@@ -246,9 +246,8 @@ class SymbolTableVisitor(visitor.Visitor):
     def _(self, node: ast.GlobalDeclNode):
         self.do_visit(node.variable)
 
-        # It is illegal for a global declaration to occur at the top level
-        if self.curr_sym_table == self.root_sym_table:
-            raise semantic_error.DeclarationException(node.variable.name, self.curr_sym_table.get_name())
+        # It is illegal for a global declaration to occur at the top level,
+        # this is taken care of in the grammar
 
         # Find the corresponding variable in the global scope
         syms = self.root_sym_table.get_symbols()
