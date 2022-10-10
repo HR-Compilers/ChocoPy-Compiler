@@ -382,7 +382,7 @@ class TypeVisitor(visitor.Visitor):
         self.do_visit(node.list_expr)
         # the list_expr must be a list type
         if not self.t_env.is_list_type(node.list_expr.get_type_str()):
-            self.type_error(node, node.list_expr.get_type_str(), 'expected str or list-type')
+            self.type_error(node, node.list_expr.get_type_str(), 'str or list-type')
 
         self.do_visit(node.index)
         if node.index.get_type_str() != 'int':
@@ -395,12 +395,11 @@ class TypeVisitor(visitor.Visitor):
         if not node.elements:
             node.set_type_str("<Empty>")
         else:
-            for i,e in enumerate(node.elements):
+            self.do_visit(node.elements[0])
+            joined_type = node.elements[0].get_type_str()
+            for e in node.elements[1:]:
                 self.do_visit(e)
-                if i == 0:
-                    joined_type = e.get_type_str()
-                else:
-                    joined_type = self.t_env.join(joined_type, e.get_type_str())
+                joined_type = self.t_env.join(joined_type, e.get_type_str())
             node.set_type_str(self.t_env.list_type(joined_type))
 
     @visit.register
@@ -416,16 +415,28 @@ class TypeVisitor(visitor.Visitor):
             node.expr = ast.NoneLiteralExprNode()
         self.do_visit(node.expr)
 
+        # check if return type matches return type of function
+        func_sym = self.t_env.get_scope_symbol_table().get_parent().lookup(self.t_env.get_scope_symbol_table().get_name())
+        if func_sym.get_type_str() != node.expr.get_type_str():
+            raise self.type_error(node, node.expr.get_type_str(), func_sym.get_type_str())
+
     @visit.register
     def _(self, node: ast.AssignStmtNode):
         # Note, remember about the special case of disallowing assigning [<None>] types in multiple assignments.
+        self.do_visit(node.expr)
+        expr_type = node.expr.get_type_str()
+        if len(node.targets) > 1 and expr_type == "[<None>]":
+                self.type_error(node, expr_type, "multi-var assignment")
         for t in node.targets:
             self.do_visit(t)
-        self.do_visit(node.expr)
+            if not self.t_env.is_assign_comp(expr_type, t.get_type_str()):
+                self.type_error(node, t.get_type_str(), expr_type)
 
     @visit.register
     def _(self, node: ast.WhileStmtNode):
         self.do_visit(node.condition)
+        if not node.condition.get_type_str() == 'bool':
+            self.type_error(node, node.condition.get_type_str(), 'bool')
         for s in node.body:
             self.do_visit(s)
 
@@ -434,5 +445,17 @@ class TypeVisitor(visitor.Visitor):
         # Note,we can iterate over str and list types. For strings the identifier type will also be a str.
         self.do_visit(node.identifier)
         self.do_visit(node.iterable)
+        id_symbol = self.t_env.get_scope_symbol_table().lookup(node.identifier.name)
+        if node.iterable.get_type_str() == 'str':
+            # identifier must be assignment compatible with string
+            if not self.t_env.is_assign_comp('str', id_symbol.get_type_str()):
+                self.type_error(node, id_symbol.get_type_str(), 'str')
+        elif self.t_env.is_list_type(node.iterable.get_type_str()):
+            # identifier must be assignment compatible with type inside list
+            elem_type = self.t_env.list_elem_type(node.iterable.get_type_str())
+            if not self.t_env.is_assign_comp(elem_type, id_symbol.get_type_str()):
+                self.type_error(node, id_symbol.get_type_str(), elem_type)
+        else:
+            self.type_error(node, node.iterable.get_type_str(), "str or list-type")
         for s in node.body:
             self.do_visit(s)

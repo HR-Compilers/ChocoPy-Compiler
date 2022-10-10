@@ -1,2 +1,3 @@
-y:[int] = None
-y = []
+x:[str] = None
+y:[str] = None
+x = y = [None]
