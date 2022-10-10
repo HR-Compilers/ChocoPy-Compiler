@@ -310,7 +310,7 @@ class SymbolTableVisitor(visitor.Visitor):
         self.do_visit(node.super_class)
 
         self.parent_sym_table = self.curr_sym_table
-        self.curr_sym_table = symbol_table.Class(node.name.name, node.super_class)
+        self.curr_sym_table = symbol_table.Class(node.name.name)
         self.parent_sym_table.add_child(self.curr_sym_table)
 
         # We need to add the super class to the symbol table if not already there
