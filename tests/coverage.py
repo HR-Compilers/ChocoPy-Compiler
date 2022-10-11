@@ -6,12 +6,12 @@ def foo(s: str) -> int:
 class bar(object):
     p: bool = True
 
-    def baz(self:"bar", xx: [int]) -> str:
+    def baz(self:"bar", xx: [int]) -> bool:
         global count
         x:int = 0
         y:int = 1
 
-        def qux(y: int) -> object:
+        def qux(y: int):
             nonlocal x
             if x > y:
                 x = -1
@@ -31,5 +31,6 @@ class bar(object):
             elif foo("Long"[0]) == 1:
                 return self is None
 
-        return "Nope"
+        return True
 print(bar().baz([1,2]))
+

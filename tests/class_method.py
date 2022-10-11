@@ -4,6 +4,7 @@ class Foo(object):
     def set(self:"Foo", x:int) -> object:
         self.x = x
 
+f:Foo = None
 f = Foo()
 f.set(1)
 print(f.x)

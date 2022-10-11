@@ -380,15 +380,18 @@ class TypeVisitor(visitor.Visitor):
     @visit.register
     def _(self, node: ast.IndexExprNode):
         self.do_visit(node.list_expr)
-        # the list_expr must be a list type
-        if not self.t_env.is_list_type(node.list_expr.get_type_str()):
+        # the list_expr must be a list type or a string
+        if not (self.t_env.is_list_type(node.list_expr.get_type_str()) or node.list_expr.get_type_str() == 'str'):
             self.type_error(node, node.list_expr.get_type_str(), 'str or list-type')
 
         self.do_visit(node.index)
         if node.index.get_type_str() != 'int':
             self.type_error(node, node.index.get_type_str(), 'int')
 
-        node.set_type_str(self.t_env.list_elem_type(node.list_expr.get_type_str()))
+        if node.list_expr.get_type_str() == 'str':
+            node.set_type_str('str')
+        else:
+            node.set_type_str(self.t_env.list_elem_type(node.list_expr.get_type_str()))
 
     @visit.register
     def _(self, node: ast.ListExprNode):

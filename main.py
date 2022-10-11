@@ -9,7 +9,7 @@ import type_visitor
 import print_visitor
 
 
-filename = 'tests/test_ret.txt'
+filename = 'tests/coverage.py'
 
 # Read in and print out the code.
 with open(filename) as f:
