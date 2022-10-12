@@ -1,3 +1,6 @@
-x:[str] = None
-y:[str] = None
-x = y = [None]
+x:int = 3
+
+def a() -> bool:
+    y: int = 3
+    y = 4
+    return True

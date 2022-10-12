@@ -212,8 +212,8 @@ class TypeVisitor(visitor.Visitor):
         signature = TypeVisitor.Signature(node.identifier.name, args_type)
         symbol = self.t_env.get_scope_symbol_table().lookup(node.identifier.name)
         assert symbol, f"Should not happen, identifier {node.identifier.name} not in scope or missing in symbol table."
-        if symbol_table.symbol_decl_type(self.t_env.get_scope_symbol_table(), node.identifier.name) != \
-                symbol_table.DeclType.Function:
+        if symbol_table.symbol_decl_type(self.t_env.get_scope_symbol_table(), node.identifier.name) == \
+                symbol_table.DeclType.Variable:
             self.type_error(node, node.identifier.name, 'expected function')
         node.set_type_str(symbol.get_type_str())
         # Look function up in current and all enclosing scopes and make sure signature matches function definition.
@@ -439,10 +439,17 @@ class TypeVisitor(visitor.Visitor):
         # Note, remember about the special case of disallowing assigning [<None>] types in multiple assignments.
         self.do_visit(node.expr)
         expr_type = node.expr.get_type_str()
+
+        # TODO: variables must not be read only
+        # TODO: must be variables, not funcs / class
         if len(node.targets) > 1 and expr_type == "[<None>]":
                 self.type_error(node, expr_type, "multi-var assignment")
         for t in node.targets:
             self.do_visit(t)
+            # target must not be read-only identifier
+            if isinstance(t, ast.IdentifierExprNode):
+                if self.t_env.get_scope_symbol_table().lookup(t.identifier.name).is_read_only():
+                    self.invalid_use_error(node, "Cannot assign to implicitly declared variable")
             if not self.t_env.is_assign_comp(expr_type, t.get_type_str()):
                 self.type_error(node, t.get_type_str(), expr_type)
 
@@ -459,6 +466,16 @@ class TypeVisitor(visitor.Visitor):
         # Note,we can iterate over str and list types. For strings the identifier type will also be a str.
         self.do_visit(node.identifier)
         self.do_visit(node.iterable)
+
+        # The identifier must be a variable, not a function or a class
+        if symbol_table.symbol_decl_type(self.t_env.get_scope_symbol_table(), node.identifier.name) != \
+                symbol_table.DeclType.Variable:
+            self.type_error(node, node.identifier.name, 'expected variable')
+
+        # identifier must not be read-only
+        if self.t_env.get_scope_symbol_table().lookup(node.identifier.name).is_read_only():
+            self.invalid_use_error(node, "Cannot assign to implicitly declared variable")
+
         id_symbol = self.t_env.get_scope_symbol_table().lookup(node.identifier.name)
         if node.iterable.get_type_str() == 'str':
             # identifier must be assignment compatible with string

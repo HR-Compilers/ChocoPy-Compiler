@@ -243,8 +243,6 @@ def symbol_decl_type(st: SymbolTable, name: str) -> Optional[DeclType]:
     Returns DeclType.Variable, DeclType.Function, or DeclType.Class depending on what symbol s defines.
     (or None if s is not in the symbol table).
     """
-    if name == "count":
-        print(name)
 
     if not st:
         b_in = built_ins(name)
