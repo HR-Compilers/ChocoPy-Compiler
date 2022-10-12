@@ -1,5 +1,5 @@
 #
-# Type visitor. Version 1.0
+# Type visitor. Version 1.1
 #
 import functools
 import astree as ast
@@ -18,6 +18,7 @@ class TypeVisitor(visitor.Visitor):
         self.upd_sym_table()
 
     def upd_sym_table(self):
+        # We update the provided symbol-table with the built-in entities (thus no need to handle them specifically).
         # We update the provided symbol-table with the built-in entities (thus no need to handle them specifically).
         st = self.t_env.get_symbol_table()
         # The 'print' function.
@@ -56,7 +57,6 @@ class TypeVisitor(visitor.Visitor):
         """
         Helps with working with method and function signatures.
         """
-
         def __init__(self, name: str, args_type: [str], return_type=''):
             self.name = name
             self.args_type = args_type
@@ -155,6 +155,9 @@ class TypeVisitor(visitor.Visitor):
         # Look up the type of the identifier in the current symbol-table scope.
         symbol = self.t_env.get_scope_symbol_table().lookup(node.identifier.name)
         assert symbol, f"Should not happen, identifier {node.identifier.name} not in scope or missing in symbol table."
+        if symbol_table.symbol_decl_type(self.t_env.get_scope_symbol_table(), node.identifier.name) != \
+                symbol_table.DeclType.Variable:
+            self.type_error(node, node.identifier.name, 'expected variable')
         node.set_type_str(symbol.get_type_str())
 
     @visit.register
@@ -181,8 +184,8 @@ class TypeVisitor(visitor.Visitor):
             t1 = self.t_env.list_elem_type(node.lhs.get_type_str())
             t2 = self.t_env.list_elem_type(node.rhs.get_type_str())
             node.set_type_str(self.t_env.join(t1, t2))
-        elif node.op == Operator.Is and \
-                node.lhs.get_type_str() not in base_types and node.lhs.get_type_str() not in base_types:
+        elif node.op == Operator.Is and node.lhs.get_type_str() not in base_types and \
+                node.lhs.get_type_str() not in base_types:
             node.set_type_str('bool')
         else:
             self.type_error(node, node.lhs.get_type_str(), node.rhs.get_type_str())
@@ -209,6 +212,9 @@ class TypeVisitor(visitor.Visitor):
         signature = TypeVisitor.Signature(node.identifier.name, args_type)
         symbol = self.t_env.get_scope_symbol_table().lookup(node.identifier.name)
         assert symbol, f"Should not happen, identifier {node.identifier.name} not in scope or missing in symbol table."
+        if symbol_table.symbol_decl_type(self.t_env.get_scope_symbol_table(), node.identifier.name) != \
+                symbol_table.DeclType.Function:
+            self.type_error(node, node.identifier.name, 'expected function')
         node.set_type_str(symbol.get_type_str())
         # Look function up in current and all enclosing scopes and make sure signature matches function definition.
         scope_st = self.t_env.get_scope_symbol_table()
@@ -284,6 +290,8 @@ class TypeVisitor(visitor.Visitor):
     def _(self, node: ast.VarDefNode):
         self.do_visit(node.var)
         self.do_visit(node.value)
+        if not self.t_env.is_assign_comp(node.value.get_type_str(), node.var.id_type.to_str()):
+            self.type_error(node, node.value.get_type_str(), node.var.id_type.to_str())
 
     @visit.register
     def _(self, node: ast.GlobalDeclNode):
@@ -297,6 +305,9 @@ class TypeVisitor(visitor.Visitor):
     def _(self, node: ast.ClassDefNode):
         self.do_visit(node.name)
         self.do_visit(node.super_class)
+        if symbol_table.symbol_decl_type(self.t_env.get_scope_symbol_table(), node.super_class.name) != \
+                symbol_table.DeclType.Class:
+            self.type_error(node, node.super_class.name, 'expected class')
         self.t_env.enter_scope(node.name.name)
         for d in node.declarations:
             self.do_visit(d)
