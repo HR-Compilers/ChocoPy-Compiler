@@ -1,11 +1,3 @@
-#
-# Symbol table construction visitor. Version 1.0
-# Yours to implement.
-#
-# I've suggested some member variables to use in the constructor, but you are free to implement
-# it differently, as long as the interface does not change.
-#
-
 import functools
 from re import T
 import astree as ast

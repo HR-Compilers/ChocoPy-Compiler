@@ -1,6 +1,3 @@
-#
-# Type visitor. Version 1.1
-#
 import functools
 import astree as ast
 from astree import Operator
